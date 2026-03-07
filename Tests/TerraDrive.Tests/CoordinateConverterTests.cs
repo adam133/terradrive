@@ -201,5 +201,73 @@ namespace TerraDrive.Tests
             Assert.That(outLon, Is.EqualTo(inputLon).Within(1e-4),
                 "Round-trip longitude should match input");
         }
+
+        // ── Elevation-aware overloads ──────────────────────────────────────────
+
+        [Test]
+        public void LatLonToUnity_WithElevation_AutoOrigin_SetsYComponent()
+        {
+            const double elevation = 42.5;
+            Vector3 result = CoordinateConverter.LatLonToUnity(51.5, -0.12, elevation);
+
+            Assert.That(result.y, Is.EqualTo((float)elevation).Within(1e-3f),
+                "Y should equal the supplied elevation");
+        }
+
+        [Test]
+        public void LatLonToUnity_WithZeroElevation_AutoOrigin_YIsZero()
+        {
+            Vector3 result = CoordinateConverter.LatLonToUnity(51.5, -0.12, 0.0);
+
+            Assert.That(result.y, Is.EqualTo(0f));
+        }
+
+        [Test]
+        public void LatLonToUnity_WithNegativeElevation_AutoOrigin_YIsNegative()
+        {
+            const double elevation = -100.0;
+            Vector3 result = CoordinateConverter.LatLonToUnity(0.0, 0.0, elevation);
+
+            Assert.That(result.y, Is.EqualTo((float)elevation).Within(1e-3f),
+                "Negative elevation (e.g. Dead Sea) should produce negative Y");
+        }
+
+        [Test]
+        public void LatLonToUnity_WithElevation_ExplicitOrigin_SetsYComponent()
+        {
+            const double elevation = 300.0;
+            Vector3 result = CoordinateConverter.LatLonToUnity(51.6, -0.12, 51.5, -0.12, elevation);
+
+            Assert.That(result.y, Is.EqualTo((float)elevation).Within(1e-3f),
+                "Y should equal the supplied elevation");
+        }
+
+        [Test]
+        public void LatLonToUnity_WithElevation_ExplicitOrigin_XAndZUnchanged()
+        {
+            // Reference: same call without elevation should yield identical X/Z.
+            // We reset between the two calls because the explicit-origin overload
+            // updates the static WorldOrigin; the [SetUp] only runs between tests,
+            // so we reset manually here to keep the two conversions independent.
+            Vector3 noElev  = CoordinateConverter.LatLonToUnity(51.6, 0.0, 51.5, -0.12);
+            CoordinateConverter.ResetWorldOrigin();
+            Vector3 withElev = CoordinateConverter.LatLonToUnity(51.6, 0.0, 51.5, -0.12, 50.0);
+
+            Assert.That(withElev.x, Is.EqualTo(noElev.x).Within(1e-3f),
+                "Elevation should not affect the X offset");
+            Assert.That(withElev.z, Is.EqualTo(noElev.z).Within(1e-3f),
+                "Elevation should not affect the Z offset");
+        }
+
+        [Test]
+        public void LatLonToUnity_NoElevationOverload_YRemainsZero()
+        {
+            // The zero-elevation convenience overloads must still return Y=0
+            Vector3 autoOrigin    = CoordinateConverter.LatLonToUnity(51.5, -0.12);
+            Vector3 explicitOrigin = CoordinateConverter.LatLonToUnity(51.5, -0.12, 51.5, -0.12);
+
+            Assert.That(autoOrigin.y,    Is.EqualTo(0f), "Auto-origin overload: Y must be 0");
+            Assert.That(explicitOrigin.y, Is.EqualTo(0f), "Explicit-origin overload: Y must be 0");
+        }
     }
 }
