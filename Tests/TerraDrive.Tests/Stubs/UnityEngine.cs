@@ -76,11 +76,22 @@ namespace UnityEngine
         public string name { get; set; } = string.Empty;
 
         public Vector3[] Vertices  { get; private set; } = Array.Empty<Vector3>();
-        public Vector2[] UVs       { get; private set; } = Array.Empty<Vector2>();
         public int[]     Triangles { get; private set; } = Array.Empty<int>();
 
+        private readonly Dictionary<int, Vector2[]> _uvChannels = new Dictionary<int, Vector2[]>();
+
+        /// <summary>Returns the UV array for channel 0 (backward-compatible shorthand).</summary>
+        public Vector2[] UVs => GetUVs(0);
+
         public void SetVertices(Vector3[] vertices) => Vertices = vertices ?? Array.Empty<Vector3>();
-        public void SetUVs(int channel, Vector2[] uvs) => UVs = uvs ?? Array.Empty<Vector2>();
+
+        public void SetUVs(int channel, Vector2[] uvs) =>
+            _uvChannels[channel] = uvs ?? Array.Empty<Vector2>();
+
+        /// <summary>Returns the UV array for the given channel, or an empty array if not set.</summary>
+        public Vector2[] GetUVs(int channel) =>
+            _uvChannels.TryGetValue(channel, out var uvs) ? uvs : Array.Empty<Vector2>();
+
         public void SetTriangles(int[] triangles, int submesh) => Triangles = triangles ?? Array.Empty<int>();
         public void RecalculateNormals() { }
         public void RecalculateBounds() { }

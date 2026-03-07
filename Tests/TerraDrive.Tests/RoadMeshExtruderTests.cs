@@ -201,5 +201,172 @@ namespace TerraDrive.Tests
             Assert.That(mesh, Is.Not.Null);
             Assert.That(mesh.Vertices.Length, Is.EqualTo(0));
         }
+
+        // ── ExtrudeWithDetails ────────────────────────────────────────────────
+
+        [Test]
+        public void ExtrudeWithDetails_ReturnsNonNullRoadMesh()
+        {
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, RoadType.Primary);
+
+            Assert.That(result.RoadMesh, Is.Not.Null);
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_ReturnsNonNullKerbMesh()
+        {
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, RoadType.Primary);
+
+            Assert.That(result.KerbMesh, Is.Not.Null);
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_RoadMesh_HasCorrectName()
+        {
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, RoadType.Residential);
+
+            Assert.That(result.RoadMesh.name, Is.EqualTo("RoadMesh"));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_KerbMesh_HasCorrectName()
+        {
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, RoadType.Residential);
+
+            Assert.That(result.KerbMesh.name, Is.EqualTo("KerbMesh"));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_RoadMesh_CorrectVertexCount()
+        {
+            // Same as Extrude: 2 spline points × 2 edge vertices = 4
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, RoadType.Primary);
+
+            Assert.That(result.RoadMesh.Vertices.Length, Is.EqualTo(4));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_RoadMesh_WidthMatchesRoadType()
+        {
+            const RoadType roadType = RoadType.Secondary;
+            float expected = RoadMeshExtruder.GetWidthForRoadType(roadType);
+
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, roadType);
+
+            float actual = result.RoadMesh.Vertices[1].x - result.RoadMesh.Vertices[0].x;
+            Assert.That(actual, Is.EqualTo(expected).Within(1e-4f));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_RoadMesh_HasUV0Channel()
+        {
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, RoadType.Primary);
+
+            Assert.That(result.RoadMesh.GetUVs(0).Length, Is.EqualTo(result.RoadMesh.Vertices.Length));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_RoadMesh_HasUV1Channel()
+        {
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, RoadType.Primary);
+
+            // UV1 (lane-marking channel) must have the same vertex count as UV0
+            Assert.That(result.RoadMesh.GetUVs(1).Length, Is.EqualTo(result.RoadMesh.Vertices.Length));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_RoadMesh_UV1_UsesLaneMarkingTileLength()
+        {
+            // Road is 10 m long; default uvTileLength=10, laneMarkingTileLength=6.
+            // At the last point: UV0.v = 10/10 = 1.0, UV1.v = 10/6 ≈ 1.667.
+            const float uvTile    = 10f;
+            const float lmTile    = 6f;
+            const float roadLen   = 10f;   // distance between TwoPoints
+
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(
+                TwoPoints, 7f, uvTile, lmTile);
+
+            float uv0V = result.RoadMesh.GetUVs(0)[2].y;   // left-edge vertex at index 2 (point 1)
+            float uv1V = result.RoadMesh.GetUVs(1)[2].y;
+
+            Assert.That(uv0V, Is.EqualTo(roadLen / uvTile).Within(1e-4f));
+            Assert.That(uv1V, Is.EqualTo(roadLen / lmTile).Within(1e-4f));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_KerbMesh_CorrectVertexCount()
+        {
+            // 4 kerb vertices per spline point: left-outer, left-inner, right-inner, right-outer
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, RoadType.Primary);
+
+            Assert.That(result.KerbMesh.Vertices.Length, Is.EqualTo(TwoPoints.Count * 4));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_KerbMesh_CorrectTriangleCount()
+        {
+            // (n-1) segments × 2 kerb strips × 2 triangles × 3 indices = (n-1) × 12
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, RoadType.Primary);
+
+            Assert.That(result.KerbMesh.Triangles.Length, Is.EqualTo((TwoPoints.Count - 1) * 12));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_KerbMesh_IsElevatedAboveRoadSurface()
+        {
+            // Spline is at Y = 0; kerb vertices should be at Y = kerbHeight > 0.
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(
+                TwoPoints, 7f,
+                kerbHeight: RoadMeshExtruder.DefaultKerbHeight);
+
+            foreach (var v in result.KerbMesh.Vertices)
+                Assert.That(v.y, Is.EqualTo(RoadMeshExtruder.DefaultKerbHeight).Within(1e-4f),
+                    "Every kerb vertex should be elevated above the road plane.");
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_KerbMesh_OuterEdgeIsBeyondRoadEdge()
+        {
+            // Road runs along Z with width = 7 m → half-width = 3.5 m.
+            // Left-outer kerb vertex should have X < −3.5 m.
+            // Right-outer kerb vertex should have X > +3.5 m.
+            const float roadWidth = 7f;
+            float halfWidth = roadWidth * 0.5f;
+
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, roadWidth);
+
+            // Vertex layout per spline point: [leftOuter, leftInner, rightInner, rightOuter]
+            float leftOuter  = result.KerbMesh.Vertices[0].x;   // index 0 of first point
+            float rightOuter = result.KerbMesh.Vertices[3].x;   // index 3 of first point
+
+            Assert.That(leftOuter,  Is.LessThan(-halfWidth),
+                "Left kerb outer edge must extend beyond the left road edge.");
+            Assert.That(rightOuter, Is.GreaterThan(halfWidth),
+                "Right kerb outer edge must extend beyond the right road edge.");
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_NullPoints_ReturnsBothEmptyMeshes()
+        {
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(null!, RoadType.Primary);
+
+            Assert.That(result.RoadMesh.Vertices.Length, Is.EqualTo(0));
+            Assert.That(result.KerbMesh.Vertices.Length, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_ExplicitWidth_KerbOutsideRoadEdge()
+        {
+            const float roadWidth = 10f;
+            float halfWidth = roadWidth * 0.5f;
+
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, roadWidth);
+
+            float leftOuter  = result.KerbMesh.Vertices[0].x;
+            float rightOuter = result.KerbMesh.Vertices[3].x;
+
+            Assert.That(leftOuter,  Is.LessThan(-halfWidth));
+            Assert.That(rightOuter, Is.GreaterThan(halfWidth));
+        }
     }
 }
