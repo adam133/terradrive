@@ -1,0 +1,3 @@
+# Downloaded .osm map files are stored here at runtime.
+# They are intentionally excluded from version control — regenerate them with:
+#   python Tools/osm_downloader.py --lat ... --lon ...
