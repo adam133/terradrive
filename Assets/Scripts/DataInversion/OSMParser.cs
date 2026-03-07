@@ -25,6 +25,13 @@ namespace TerraDrive.DataInversion
 
         /// <summary>All OSM tags on this way.</summary>
         public Dictionary<string, string> Tags { get; set; } = new Dictionary<string, string>();
+
+        /// <summary>
+        /// <c>true</c> when the OSM way carries a <c>bridge</c> tag with a value other than
+        /// <c>"no"</c> (e.g. <c>"yes"</c>, <c>"viaduct"</c>), indicating the road is elevated
+        /// on a bridge structure and should be raised above the surface mesh.
+        /// </summary>
+        public bool IsBridge { get; set; }
     }
 
     /// <summary>
@@ -100,6 +107,7 @@ namespace TerraDrive.DataInversion
                         HighwayType = highwayType,
                         Nodes = nodeRefs,
                         Tags = tags,
+                        IsBridge = IsBridgeWay(tags),
                     });
                 }
                 else if (tags.ContainsKey("building"))
@@ -206,6 +214,7 @@ namespace TerraDrive.DataInversion
                         HighwayType = highwayType,
                         Nodes       = nodeRefs,
                         Tags        = tags,
+                        IsBridge    = IsBridgeWay(tags),
                     });
                 }
                 else if (tags.ContainsKey("building"))
@@ -353,5 +362,13 @@ namespace TerraDrive.DataInversion
             }
             return positions;
         }
+
+        /// <summary>
+        /// Returns <c>true</c> when <paramref name="tags"/> contains a <c>bridge</c> key with a
+        /// value other than <c>"no"</c> (e.g. <c>"yes"</c>, <c>"viaduct"</c>).
+        /// </summary>
+        private static bool IsBridgeWay(Dictionary<string, string> tags) =>
+            tags.TryGetValue("bridge", out string bridgeValue) &&
+            !string.Equals(bridgeValue, "no", StringComparison.OrdinalIgnoreCase);
     }
 }

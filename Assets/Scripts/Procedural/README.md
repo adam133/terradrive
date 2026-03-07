@@ -7,6 +7,7 @@ Mesh-generation systems that convert parsed OSM data into drivable geometry and 
 | `SplineGenerator.cs` | Builds Catmull-Rom splines from lists of `Vector3` road nodes |
 | `RoadMeshExtruder.cs` | Extrudes a UV-mapped road mesh (with optional kerbs and lane markings) along a spline |
 | `RoadMeshResult.cs` | Container returned by `RoadMeshExtruder.ExtrudeWithDetails` holding `RoadMesh` and `KerbMesh` |
+| `BridgeElevator.cs` | Smoothly raises a road spline's Y coordinates when the road is a bridge or overpass |
 | `BuildingGenerator.cs` | Extrudes building footprints into 3D meshes with randomised heights |
 | `RegionTextures.cs` | Maps `RegionType` to region-appropriate texture asset IDs for roads and buildings |
 | `BuildingMeshResult.cs` | Result type returned by `BuildingGenerator.Extrude` (meshes + texture IDs) |
@@ -22,6 +23,31 @@ var spline = SplineGenerator.BuildCatmullRom(nodes, samplesPerSegment: 20);
 ```
 
 Returns a `List<Vector3>` of evenly-sampled world-space positions along the smoothed curve.
+
+## BridgeElevator
+
+When a `RoadSegment` has `IsBridge = true` (parsed from the OSM `bridge` tag), pass the
+spline through `BridgeElevator.ApplyElevation` before extrusion.  The method returns a new
+list of points whose Y coordinates are smoothly ramped up at the approach, held at the peak
+height through the span, and ramped back down at the departure — using a smooth-step curve
+to avoid sharp kinks at the bridge ends.
+
+```csharp
+if (road.IsBridge)
+{
+    splinePoints = BridgeElevator.ApplyElevation(splinePoints);
+}
+RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(splinePoints, roadType);
+```
+
+| Parameter | Default | Description |
+|---|---|---|
+| `bridgeHeight` | `4.5 m` | Height added at the peak of the bridge above the surrounding surface |
+| `rampFraction` | `0.2` | Fraction of the spline length used for each approach/departure ramp (20 %) |
+
+The first `rampFraction` of spline points ascend using a cubic smooth-step curve; the middle
+`1 − 2 × rampFraction` are flat at full height; and the last `rampFraction` descend
+symmetrically.
 
 ## RoadMeshExtruder
 
