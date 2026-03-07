@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using UnityEngine;
 using TerraDrive.Core;
+using TerraDrive.Terrain;
 
 namespace TerraDrive.DataInversion
 {
@@ -115,6 +118,112 @@ namespace TerraDrive.DataInversion
 
             Debug.Log($"[OSMParser] Parsed {roads.Count} road segments, {buildings.Count} building footprints, " +
                       $"and region '{region}' from '{filePath}'.");
+            return (roads, buildings, region);
+        }
+
+        /// <summary>
+        /// Parses an <c>.osm</c> file, samples terrain elevation for every node via
+        /// <paramref name="elevationSource"/>, and returns all highway and building ways
+        /// together with the detected <see cref="RegionType"/>.
+        ///
+        /// Each <see cref="RoadSegment"/> node and each <see cref="BuildingFootprint"/>
+        /// corner will have its Unity Y coordinate set to the elevation (in metres above
+        /// sea level) returned by the elevation source for that node's latitude/longitude.
+        /// </summary>
+        /// <param name="filePath">Absolute or project-relative path to the <c>.osm</c> file.</param>
+        /// <param name="originLat">Map origin latitude — maps to world (0, 0, 0).</param>
+        /// <param name="originLon">Map origin longitude — maps to world (0, 0, 0).</param>
+        /// <param name="elevationSource">
+        /// DEM data source used to fetch terrain elevation values for each OSM node.
+        /// </param>
+        /// <param name="cancellationToken">Optional cancellation token.</param>
+        /// <returns>
+        /// A tuple containing a list of <see cref="RoadSegment"/>s, a list of
+        /// <see cref="BuildingFootprint"/>s, and a <see cref="RegionType"/> derived from
+        /// the most common country code found on nodes in the file.
+        /// </returns>
+        public static async Task<(List<RoadSegment> roads, List<BuildingFootprint> buildings, RegionType region)>
+            ParseAsync(
+                string filePath,
+                double originLat,
+                double originLon,
+                IElevationSource elevationSource,
+                CancellationToken cancellationToken = default)
+        {
+            if (elevationSource == null) throw new ArgumentNullException(nameof(elevationSource));
+
+            XDocument doc = XDocument.Load(filePath);
+            XElement root = doc.Root ?? throw new InvalidOperationException("Empty OSM document.");
+
+            // ── Collect all node lat/lon values (preserving insertion order) ──────
+            var nodeLatLons  = new Dictionary<long, (double lat, double lon)>();
+            foreach (XElement node in root.Elements("node"))
+            {
+                long   id  = (long)node.Attribute("id");
+                double lat = (double)node.Attribute("lat");
+                double lon = (double)node.Attribute("lon");
+                nodeLatLons[id] = (lat, lon);
+            }
+
+            // ── Batch-fetch elevations for all nodes ──────────────────────────────
+            var nodeIds  = new List<long>(nodeLatLons.Count);
+            var locations = new List<(double lat, double lon)>(nodeLatLons.Count);
+            foreach (var kv in nodeLatLons)
+            {
+                nodeIds.Add(kv.Key);
+                locations.Add(kv.Value);
+            }
+
+            IReadOnlyList<double> elevations =
+                await elevationSource.FetchElevationsAsync(locations, cancellationToken)
+                                     .ConfigureAwait(false);
+
+            // ── Build node id → world position lookup (with elevation) ─────────────
+            var nodePositions = new Dictionary<long, Vector3>(nodeIds.Count);
+            for (int i = 0; i < nodeIds.Count; i++)
+            {
+                (double lat, double lon) = locations[i];
+                double elev = elevations[i];
+                nodePositions[nodeIds[i]] =
+                    CoordinateConverter.LatLonToUnity(lat, lon, originLat, originLon, elev);
+            }
+
+            var roads     = new List<RoadSegment>();
+            var buildings = new List<BuildingFootprint>();
+
+            // ── Process ways ───────────────────────────────────────────────────────
+            foreach (XElement way in root.Elements("way"))
+            {
+                long wayId    = (long)way.Attribute("id");
+                var  tags     = ParseTags(way);
+                var  nodeRefs = BuildNodeList(way, nodePositions);
+
+                if (tags.TryGetValue("highway", out string highwayType))
+                {
+                    roads.Add(new RoadSegment
+                    {
+                        WayId       = wayId,
+                        HighwayType = highwayType,
+                        Nodes       = nodeRefs,
+                        Tags        = tags,
+                    });
+                }
+                else if (tags.ContainsKey("building"))
+                {
+                    buildings.Add(new BuildingFootprint
+                    {
+                        WayId     = wayId,
+                        Footprint = nodeRefs,
+                        Tags      = tags,
+                    });
+                }
+            }
+
+            // ── Detect region from node country tags ───────────────────────────────
+            RegionType region = DetectRegion(root);
+
+            Debug.Log($"[OSMParser] Parsed {roads.Count} road segments, {buildings.Count} building footprints, " +
+                      $"and region '{region}' from '{filePath}' (with elevation).");
             return (roads, buildings, region);
         }
 

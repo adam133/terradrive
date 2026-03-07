@@ -1,9 +1,12 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
 using TerraDrive.DataInversion;
+using TerraDrive.Terrain;
 
 namespace TerraDrive.Tests
 {
@@ -557,6 +560,237 @@ namespace TerraDrive.Tests
                 Assert.That(region, Is.EqualTo(RegionType.Temperate));
             }
             finally { DeleteFile(path); }
+        }
+        // ── ParseAsync (with elevation) ────────────────────────────────────────
+
+        /// <summary>
+        /// Stub elevation source that returns a fixed elevation value for every location.
+        /// </summary>
+        private sealed class FixedElevationSource : IElevationSource
+        {
+            private readonly double _elevation;
+            public FixedElevationSource(double elevation) => _elevation = elevation;
+
+            public Task<IReadOnlyList<double>> FetchElevationsAsync(
+                IReadOnlyList<(double lat, double lon)> locations,
+                CancellationToken cancellationToken = default)
+            {
+                var result = new double[locations.Count];
+                for (int i = 0; i < result.Length; i++)
+                    result[i] = _elevation;
+                return Task.FromResult<IReadOnlyList<double>>(result);
+            }
+        }
+
+        /// <summary>
+        /// Stub elevation source that returns a per-index elevation value.
+        /// </summary>
+        private sealed class IndexedElevationSource : IElevationSource
+        {
+            private readonly double[] _elevations;
+            public IndexedElevationSource(params double[] elevations) => _elevations = elevations;
+
+            public Task<IReadOnlyList<double>> FetchElevationsAsync(
+                IReadOnlyList<(double lat, double lon)> locations,
+                CancellationToken cancellationToken = default)
+                => Task.FromResult<IReadOnlyList<double>>(_elevations);
+        }
+
+        [Test]
+        public async Task ParseAsync_RoadNodes_HaveElevationAppliedToY()
+        {
+            const double elev = 42.0;
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1000'/>
+  <node id='2' lat='51.5010' lon='-0.1010'/>
+  <way id='100'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='primary'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var source = new FixedElevationSource(elev);
+                var (roads, _, _) = await OSMParser.ParseAsync(path, 51.5000, -0.1000, source);
+
+                Assert.That(roads.Count, Is.EqualTo(1));
+                foreach (Vector3 node in roads[0].Nodes)
+                    Assert.That(node.y, Is.EqualTo((float)elev).Within(0.001f),
+                        "Road node Y should equal the sampled elevation.");
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public async Task ParseAsync_BuildingFootprint_HaveElevationAppliedToY()
+        {
+            const double elev = 15.5;
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.50' lon='-0.10'/>
+  <node id='2' lat='51.50' lon='-0.09'/>
+  <node id='3' lat='51.51' lon='-0.09'/>
+  <node id='4' lat='51.51' lon='-0.10'/>
+  <way id='200'>
+    <nd ref='1'/><nd ref='2'/><nd ref='3'/><nd ref='4'/><nd ref='1'/>
+    <tag k='building' v='yes'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var source = new FixedElevationSource(elev);
+                var (_, buildings, _) = await OSMParser.ParseAsync(path, 51.50, -0.10, source);
+
+                Assert.That(buildings.Count, Is.EqualTo(1));
+                foreach (Vector3 corner in buildings[0].Footprint)
+                    Assert.That(corner.y, Is.EqualTo((float)elev).Within(0.001f),
+                        "Building corner Y should equal the sampled elevation.");
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public async Task ParseAsync_OriginNode_HasZeroXZ_AndCorrectElevation()
+        {
+            const double elev = 100.0;
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1278'/>
+  <node id='2' lat='51.5010' lon='-0.1278'/>
+  <way id='10'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='residential'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var source = new FixedElevationSource(elev);
+                var (roads, _, _) = await OSMParser.ParseAsync(path, 51.5000, -0.1278, source);
+
+                Vector3 origin = roads[0].Nodes[0];
+                Assert.That(origin.x, Is.EqualTo(0f).Within(0.01f), "Origin node X should be 0");
+                Assert.That(origin.y, Is.EqualTo((float)elev).Within(0.001f), "Origin node Y should equal elevation");
+                Assert.That(origin.z, Is.EqualTo(0f).Within(0.01f), "Origin node Z should be 0");
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public async Task ParseAsync_NullElevationSource_ThrowsArgumentNullException()
+        {
+            string osm = @"<?xml version='1.0'?><osm version='0.6'/>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                Assert.ThrowsAsync<ArgumentNullException>(
+                    () => OSMParser.ParseAsync(path, 0, 0, null!));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public async Task ParseAsync_ElevationFetchedOncePerUniqueNode()
+        {
+            // Two nodes, both distinct — verify batch size matches node count
+            int fetchCallCount = 0;
+            int lastBatchSize  = 0;
+
+            var source = new TrackingElevationSource(locations =>
+            {
+                fetchCallCount++;
+                lastBatchSize = locations.Count;
+                var result = new double[locations.Count];
+                return Task.FromResult<IReadOnlyList<double>>(result);
+            });
+
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5' lon='-0.1'/>
+  <node id='2' lat='51.6' lon='-0.1'/>
+  <way id='1'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='primary'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                await OSMParser.ParseAsync(path, 51.5, -0.1, source);
+
+                Assert.That(fetchCallCount, Is.EqualTo(1), "FetchElevationsAsync should be called exactly once.");
+                Assert.That(lastBatchSize, Is.EqualTo(2), "Both OSM nodes should be included in the batch.");
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public async Task ParseAsync_ZeroElevation_NodesHaveYEqualZero()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5' lon='-0.1'/>
+  <node id='2' lat='51.6' lon='-0.1'/>
+  <way id='1'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='secondary'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var source = new FixedElevationSource(0.0);
+                var (roads, _, _) = await OSMParser.ParseAsync(path, 51.5, -0.1, source);
+
+                foreach (Vector3 node in roads[0].Nodes)
+                    Assert.That(node.y, Is.EqualTo(0f), "Zero elevation should give Y = 0.");
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public async Task ParseAsync_DifferentElevationsPerNode_EachNodeHasCorrectY()
+        {
+            // Node 1 (origin) at elev 10m, node 2 at elev 50m
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1278'/>
+  <node id='2' lat='51.5010' lon='-0.1278'/>
+  <way id='10'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='primary'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                // Nodes are enumerated in document order: id=1 first, id=2 second
+                var source = new IndexedElevationSource(10.0, 50.0);
+                var (roads, _, _) = await OSMParser.ParseAsync(path, 51.5000, -0.1278, source);
+
+                Assert.That(roads[0].Nodes[0].y, Is.EqualTo(10f).Within(0.001f),
+                    "First node Y should be 10m.");
+                Assert.That(roads[0].Nodes[1].y, Is.EqualTo(50f).Within(0.001f),
+                    "Second node Y should be 50m.");
+            }
+            finally { DeleteFile(path); }
+        }
+
+        private sealed class TrackingElevationSource : IElevationSource
+        {
+            private readonly Func<IReadOnlyList<(double lat, double lon)>, Task<IReadOnlyList<double>>> _handler;
+
+            public TrackingElevationSource(
+                Func<IReadOnlyList<(double lat, double lon)>, Task<IReadOnlyList<double>>> handler)
+                => _handler = handler;
+
+            public Task<IReadOnlyList<double>> FetchElevationsAsync(
+                IReadOnlyList<(double lat, double lon)> locations,
+                CancellationToken cancellationToken = default)
+                => _handler(locations);
         }
     }
 }
