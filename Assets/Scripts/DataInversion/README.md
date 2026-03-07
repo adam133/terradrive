@@ -27,6 +27,7 @@ The most common country code found in those tags is mapped to a `RegionType` val
 | `HighwayType` | `string` | Value of the `highway` tag (e.g. `"primary"`, `"residential"`) |
 | `Nodes` | `List<Vector3>` | World-space XZ positions (Y = 0) of the way's nodes |
 | `Tags` | `Dictionary<string,string>` | All OSM tags on this way |
+| `IsBridge` | `bool` | `true` when the way has a `bridge` tag with a value other than `"no"` (e.g. `"yes"`, `"viaduct"`) |
 
 ### BuildingFootprint
 

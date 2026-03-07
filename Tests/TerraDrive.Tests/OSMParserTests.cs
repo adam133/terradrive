@@ -792,5 +792,162 @@ namespace TerraDrive.Tests
                 CancellationToken cancellationToken = default)
                 => _handler(locations);
         }
+
+        // ── Bridge / IsBridge ────────────────────────────────────────────────
+
+        [Test]
+        public void Parse_BridgeYes_SetsBridgeFlag()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1000'/>
+  <node id='2' lat='51.5010' lon='-0.1010'/>
+  <way id='200'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='primary'/>
+    <tag k='bridge' v='yes'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+
+                Assert.That(roads[0].IsBridge, Is.True,
+                    "bridge=yes should set IsBridge to true.");
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_BridgeViaduct_SetsBridgeFlag()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1000'/>
+  <node id='2' lat='51.5010' lon='-0.1010'/>
+  <way id='201'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='motorway'/>
+    <tag k='bridge' v='viaduct'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+
+                Assert.That(roads[0].IsBridge, Is.True,
+                    "bridge=viaduct should set IsBridge to true.");
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_NoBridgeTag_IsBridgeIsFalse()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1000'/>
+  <node id='2' lat='51.5010' lon='-0.1010'/>
+  <way id='202'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='residential'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+
+                Assert.That(roads[0].IsBridge, Is.False,
+                    "A way without a bridge tag should not be flagged as a bridge.");
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_BridgeNo_IsBridgeIsFalse()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1000'/>
+  <node id='2' lat='51.5010' lon='-0.1010'/>
+  <way id='203'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='primary'/>
+    <tag k='bridge' v='no'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+
+                Assert.That(roads[0].IsBridge, Is.False,
+                    "bridge=no should not set IsBridge to true.");
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_MixedBridgeAndNonBridgeRoads_FlagSetCorrectly()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1000'/>
+  <node id='2' lat='51.5010' lon='-0.1010'/>
+  <node id='3' lat='51.5020' lon='-0.1020'/>
+  <way id='301'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='primary'/>
+    <tag k='bridge' v='yes'/>
+  </way>
+  <way id='302'>
+    <nd ref='2'/><nd ref='3'/>
+    <tag k='highway' v='residential'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+
+                Assert.That(roads.Count, Is.EqualTo(2));
+                RoadSegment bridgeRoad    = roads.Find(r => r.WayId == 301)!;
+                RoadSegment nonBridgeRoad = roads.Find(r => r.WayId == 302)!;
+
+                Assert.That(bridgeRoad.IsBridge, Is.True,
+                    "Way 301 with bridge=yes should be flagged as a bridge.");
+                Assert.That(nonBridgeRoad.IsBridge, Is.False,
+                    "Way 302 without a bridge tag should not be flagged as a bridge.");
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_BridgeTag_IsCopiedToTagsDictionary()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1000'/>
+  <node id='2' lat='51.5010' lon='-0.1010'/>
+  <way id='400'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='secondary'/>
+    <tag k='bridge' v='yes'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+
+                Assert.That(roads[0].Tags.ContainsKey("bridge"), Is.True,
+                    "The bridge tag should be present in the Tags dictionary.");
+                Assert.That(roads[0].Tags["bridge"], Is.EqualTo("yes"));
+            }
+            finally { DeleteFile(path); }
+        }
     }
 }

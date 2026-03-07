@@ -71,7 +71,9 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 - [x] Generate UV coordinates suitable for a tiling asphalt texture.
 - [x] Add road-type-based width variation (motorways wider than residential streets).
 - [x] Add kerbs and lane markings as separate meshes or UV channels.
-- See [`Assets/Scripts/Procedural/RoadMeshExtruder.cs`](Assets/Scripts/Procedural/RoadMeshExtruder.cs).
+- [x] Detect `bridge`/`viaduct` OSM tags and mark road segments with `IsBridge`.
+- [x] Smoothly elevate bridge splines above the surface mesh using `BridgeElevator` (smooth-step ramps at approach and departure).
+- See [`Assets/Scripts/Procedural/RoadMeshExtruder.cs`](Assets/Scripts/Procedural/RoadMeshExtruder.cs) and [`Assets/Scripts/Procedural/BridgeElevator.cs`](Assets/Scripts/Procedural/BridgeElevator.cs).
 
 ### Phase 4 — Biomes & Asset Scatterer ⚠️ In Progress
 
@@ -148,6 +150,7 @@ They cover the following modules:
 | `RoadTypeTests.cs` | `RoadType` |
 | `RegionTypeTests.cs` | `RegionType`, `OSMParser.DetectRegion` |
 | `RoadMeshExtruderTests.cs` | `RoadMeshExtruder`, `RoadMeshResult` |
+| `BridgeElevatorTests.cs` | `BridgeElevator` |
 | `RoadsidePropPlacerTests.cs` | `RoadsidePropPlacer`, `PropPlacement`, `PropType` |
 | `OpenElevationSourceTests.cs` | `OpenElevationSource`, `IElevationSource` |
 | `ChaseCamIntegrationTests.cs` | `ChaseCam` (integration, renders `chase-cam-preview.png`) |
