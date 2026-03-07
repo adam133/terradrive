@@ -2,6 +2,7 @@
 // and tested in a plain .NET NUnit project without a Unity installation.
 
 using System;
+using System.Collections.Generic;
 
 namespace UnityEngine
 {
@@ -18,6 +19,40 @@ namespace UnityEngine
         }
 
         public static Vector3 zero => new Vector3(0f, 0f, 0f);
+        public static Vector3 up   => new Vector3(0f, 1f, 0f);
+
+        /// <summary>Returns a version of this vector with magnitude 1.</summary>
+        public Vector3 normalized
+        {
+            get
+            {
+                float len = (float)Math.Sqrt(x * x + y * y + z * z);
+                return len < 1e-7f ? zero : new Vector3(x / len, y / len, z / len);
+            }
+        }
+
+        /// <summary>Cross product of two vectors.</summary>
+        public static Vector3 Cross(Vector3 a, Vector3 b) =>
+            new Vector3(
+                a.y * b.z - a.z * b.y,
+                a.z * b.x - a.x * b.z,
+                a.x * b.y - a.y * b.x);
+
+        /// <summary>Euclidean distance between two points.</summary>
+        public static float Distance(Vector3 a, Vector3 b)
+        {
+            float dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z;
+            return (float)Math.Sqrt(dx * dx + dy * dy + dz * dz);
+        }
+
+        public static Vector3 operator -(Vector3 a, Vector3 b) =>
+            new Vector3(a.x - b.x, a.y - b.y, a.z - b.z);
+
+        public static Vector3 operator +(Vector3 a, Vector3 b) =>
+            new Vector3(a.x + b.x, a.y + b.y, a.z + b.z);
+
+        public static Vector3 operator *(Vector3 a, float s) =>
+            new Vector3(a.x * s, a.y * s, a.z * s);
 
         public bool Equals(Vector3 other) =>
             Math.Abs(x - other.x) < 1e-5f &&
@@ -25,6 +60,30 @@ namespace UnityEngine
             Math.Abs(z - other.z) < 1e-5f;
 
         public override string ToString() => $"({x}, {y}, {z})";
+    }
+
+    /// <summary>Stub for UnityEngine.Vector2.</summary>
+    public struct Vector2
+    {
+        public float x, y;
+        public Vector2(float x, float y) { this.x = x; this.y = y; }
+        public override string ToString() => $"({x}, {y})";
+    }
+
+    /// <summary>Stub for UnityEngine.Mesh — stores geometry for test assertions.</summary>
+    public class Mesh
+    {
+        public string name { get; set; } = string.Empty;
+
+        public Vector3[] Vertices  { get; private set; } = Array.Empty<Vector3>();
+        public Vector2[] UVs       { get; private set; } = Array.Empty<Vector2>();
+        public int[]     Triangles { get; private set; } = Array.Empty<int>();
+
+        public void SetVertices(Vector3[] vertices) => Vertices = vertices ?? Array.Empty<Vector3>();
+        public void SetUVs(int channel, Vector2[] uvs) => UVs = uvs ?? Array.Empty<Vector2>();
+        public void SetTriangles(int[] triangles, int submesh) => Triangles = triangles ?? Array.Empty<int>();
+        public void RecalculateNormals() { }
+        public void RecalculateBounds() { }
     }
 
     /// <summary>Stub for UnityEngine.Debug — swallows log output during tests.</summary>
