@@ -16,6 +16,8 @@
     <Compile Include="../../Assets/Scripts/DataInversion/OSMParser.cs" />
     <Compile Include="../../Assets/Scripts/DataInversion/RoadType.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/RoadMeshExtruder.cs" />
+    <Compile Include="../../Assets/Scripts/Terrain/IElevationSource.cs" />
+    <Compile Include="../../Assets/Scripts/Terrain/OpenElevationSource.cs" />
   </ItemGroup>
 
   <ItemGroup>

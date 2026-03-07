@@ -59,6 +59,25 @@ namespace TerraDrive.Core
         /// <param name="lon">Longitude in decimal degrees.</param>
         /// <returns>World-space position with X = east offset and Z = north offset in metres.</returns>
         public static Vector3 LatLonToUnity(double lat, double lon)
+            => LatLonToUnity(lat, lon, 0.0);
+
+        /// <summary>
+        /// Projects a WGS-84 GPS coordinate and DEM elevation to a Unity world-space
+        /// position using the stored <see cref="WorldOrigin"/>.  The first call
+        /// auto-initialises <see cref="WorldOrigin"/> from this coordinate, returning
+        /// (0, <paramref name="elevationMetres"/>, 0).
+        /// </summary>
+        /// <param name="lat">Latitude in decimal degrees.</param>
+        /// <param name="lon">Longitude in decimal degrees.</param>
+        /// <param name="elevationMetres">
+        /// Elevation above sea level in metres (e.g. from SRTM / Open-Elevation).
+        /// Maps directly to the Unity Y axis.
+        /// </param>
+        /// <returns>
+        /// World-space position with X = east offset, Y = elevation, Z = north offset,
+        /// all in metres.
+        /// </returns>
+        public static Vector3 LatLonToUnity(double lat, double lon, double elevationMetres)
         {
             double mercX = LonToMercatorX(lon);
             double mercY = LatToMercatorY(lat);
@@ -70,7 +89,10 @@ namespace TerraDrive.Core
                 _worldOriginSet = true;
             }
 
-            return new Vector3((float)(mercX - _worldOriginX), 0f, (float)(mercY - _worldOriginY));
+            return new Vector3(
+                (float)(mercX - _worldOriginX),
+                (float)elevationMetres,
+                (float)(mercY - _worldOriginY));
         }
 
         /// <summary>
@@ -85,6 +107,27 @@ namespace TerraDrive.Core
         /// <param name="originLon">Origin longitude — maps to world (0, 0, 0).</param>
         /// <returns>World-space position with X = east offset and Z = north offset in metres.</returns>
         public static Vector3 LatLonToUnity(double lat, double lon, double originLat, double originLon)
+            => LatLonToUnity(lat, lon, originLat, originLon, 0.0);
+
+        /// <summary>
+        /// Projects a WGS-84 GPS coordinate and DEM elevation to a Unity world-space
+        /// position using an explicit map origin.  Also updates <see cref="WorldOrigin"/>
+        /// to the Mercator coordinates of the supplied origin.
+        /// </summary>
+        /// <param name="lat">Latitude in decimal degrees.</param>
+        /// <param name="lon">Longitude in decimal degrees.</param>
+        /// <param name="originLat">Origin latitude — maps to world (0, 0, 0).</param>
+        /// <param name="originLon">Origin longitude — maps to world (0, 0, 0).</param>
+        /// <param name="elevationMetres">
+        /// Elevation above sea level in metres (e.g. from SRTM / Open-Elevation).
+        /// Maps directly to the Unity Y axis.
+        /// </param>
+        /// <returns>
+        /// World-space position with X = east offset, Y = elevation, Z = north offset,
+        /// all in metres.
+        /// </returns>
+        public static Vector3 LatLonToUnity(
+            double lat, double lon, double originLat, double originLon, double elevationMetres)
         {
             double originMercX = LonToMercatorX(originLon);
             double originMercY = LatToMercatorY(originLat);
@@ -96,7 +139,7 @@ namespace TerraDrive.Core
             double x = LonToMercatorX(lon) - originMercX;
             double z = LatToMercatorY(lat)  - originMercY;
 
-            return new Vector3((float)x, 0f, (float)z);
+            return new Vector3((float)x, (float)elevationMetres, (float)z);
         }
 
         /// <summary>
