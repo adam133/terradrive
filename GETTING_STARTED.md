@@ -197,7 +197,7 @@ Run the produced binary to play the game outside the editor.
 | Building footprint → 3D mesh | ✅ Working |
 | Roadside prop placement | ✅ Working |
 | Region / biome detection from OSM tags | ✅ Working |
-| Elevation (DEM) integration | ⚠️ Partial — coordinate overloads ready, terrain mesh not yet connected |
+| Elevation (DEM) integration | ✅ Working — `ElevationGrid.SampleAsync` + `TerrainMeshGenerator.Generate` + `OSMParser.ParseAsync` |
 | Car physics + chase camera | ✅ Working |
 | Game state machine | ✅ Working |
 | Prefab selection per region kit | 🔲 Planned |

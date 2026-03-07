@@ -111,18 +111,21 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 - See [`Assets/Scripts/Vehicle/CarController.cs`](Assets/Scripts/Vehicle/CarController.cs) and
   [`Assets/Scripts/Vehicle/ChaseCam.cs`](Assets/Scripts/Vehicle/ChaseCam.cs).
 
-### Phase 7 — Terrain Elevation ⚠️ In Progress
+### Phase 7 — Terrain Elevation ✅
 
 **Goal:** Apply real-world elevation data so roads and buildings sit on accurate terrain rather than a flat plane.
 
 - [x] Define `IElevationSource` interface for pluggable DEM backends.
 - [x] Implement `OpenElevationSource` — fetches SRTM 30 m elevation data from the [Open-Elevation API](https://open-elevation.com) (no API key required, self-hostable for offline use).
 - [x] Add elevation overloads to `CoordinateConverter` (`LatLonToUnity(lat, lon, elevMetres)` and `LatLonToUnity(lat, lon, originLat, originLon, elevMetres)`) that set the Unity Y axis.
-- [ ] Sample elevation for every OSM node during map load and apply Y positions to `RoadSegment` nodes and `BuildingFootprint` corners.
-- [ ] Generate a terrain mesh or heightfield that matches the loaded elevation grid.
-- [ ] Raise road splines and building footprints to match sampled terrain heights.
-- See [`Assets/Scripts/Terrain/IElevationSource.cs`](Assets/Scripts/Terrain/IElevationSource.cs) and
-  [`Assets/Scripts/Terrain/OpenElevationSource.cs`](Assets/Scripts/Terrain/OpenElevationSource.cs).
+- [x] Sample elevation for every OSM node during map load and apply Y positions to `RoadSegment` nodes and `BuildingFootprint` corners (via `OSMParser.ParseAsync`).
+- [x] Implement `ElevationGrid` — a regular lat/lon grid of DEM samples with a `SampleAsync` factory that batch-fetches from any `IElevationSource`.
+- [x] Generate a terrain mesh from an `ElevationGrid` using `TerrainMeshGenerator.Generate` — produces a UV-mapped heightfield mesh whose Y coordinates match the sampled elevation data.
+- [ ] Raise road splines and building footprints to match sampled terrain heights (requires Unity scene wiring).
+- See [`Assets/Scripts/Terrain/IElevationSource.cs`](Assets/Scripts/Terrain/IElevationSource.cs),
+  [`Assets/Scripts/Terrain/OpenElevationSource.cs`](Assets/Scripts/Terrain/OpenElevationSource.cs),
+  [`Assets/Scripts/Terrain/ElevationGrid.cs`](Assets/Scripts/Terrain/ElevationGrid.cs), and
+  [`Assets/Scripts/Terrain/TerrainMeshGenerator.cs`](Assets/Scripts/Terrain/TerrainMeshGenerator.cs).
 
 ### Phase 8 — Race Logic & HUD 🔲 Planned
 
@@ -153,6 +156,7 @@ They cover the following modules:
 | `BridgeElevatorTests.cs` | `BridgeElevator` |
 | `RoadsidePropPlacerTests.cs` | `RoadsidePropPlacer`, `PropPlacement`, `PropType` |
 | `OpenElevationSourceTests.cs` | `OpenElevationSource`, `IElevationSource` |
+| `TerrainMeshGeneratorTests.cs` | `ElevationGrid`, `TerrainMeshGenerator`, `TerrainMeshResult` |
 | `ChaseCamIntegrationTests.cs` | `ChaseCam` (integration, renders `chase-cam-preview.png`) |
 | `MapRendererIntegrationTests.cs` | `OSMParser` + `SplineGenerator` (integration, renders `map-preview.png`) |
 

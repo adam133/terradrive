@@ -27,6 +27,9 @@
     <Compile Include="../../Assets/Scripts/Procedural/RoadsidePropPlacer.cs" />
     <Compile Include="../../Assets/Scripts/Terrain/IElevationSource.cs" />
     <Compile Include="../../Assets/Scripts/Terrain/OpenElevationSource.cs" />
+    <Compile Include="../../Assets/Scripts/Terrain/ElevationGrid.cs" />
+    <Compile Include="../../Assets/Scripts/Terrain/TerrainMeshResult.cs" />
+    <Compile Include="../../Assets/Scripts/Terrain/TerrainMeshGenerator.cs" />
   </ItemGroup>
 
   <ItemGroup>
