@@ -30,8 +30,9 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
     /Scripts
       /Core          ← Game managers, state machines, coordinate helpers
       /DataInversion ← OSM / DEM parsing logic
-      /Procedural    ← Mesh generation (Roads, Buildings)
-      /Vehicle       ← Physics and controls
+      /Procedural    ← Mesh generation (Roads, Buildings, Props)
+      /Terrain       ← Elevation data sources (IElevationSource, OpenElevationSource)
+      /Vehicle       ← Physics, controls, and chase camera
     /Prefabs         ← Asset kits (Signs, Houses, Foliage)
     /Shaders         ← World-mapping and road textures
   /Tools             ← Editor scripts for map downloading
@@ -68,8 +69,8 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 
 - [x] Extrude a configurable-width road mesh along each spline.
 - [x] Generate UV coordinates suitable for a tiling asphalt texture.
-- [ ] Add road-type-based width variation (motorways wider than residential streets).
-- [ ] Add kerbs and lane markings as separate meshes or UV channels.
+- [x] Add road-type-based width variation (motorways wider than residential streets).
+- [x] Add kerbs and lane markings as separate meshes or UV channels.
 - See [`Assets/Scripts/Procedural/RoadMeshExtruder.cs`](Assets/Scripts/Procedural/RoadMeshExtruder.cs).
 
 ### Phase 4 — Biomes & Asset Scatterer ⚠️ In Progress
@@ -77,11 +78,13 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 **Goal:** Populate roadsides with region-appropriate props (signs, lamp posts, buildings).
 
 - [x] Extrude building footprints into 3D wall and roof meshes with deterministic randomised heights.
-- [ ] Read the `country` or `addr:country` tag from OSM nodes to detect region/biome.
+- [x] Read the `country` or `addr:country` tag from OSM nodes to detect region/biome.
+- [x] Scatter roadside props (signs, lamp posts, fences) along road splines.
 - [ ] Select prefabs from the matching regional kit folder (`European_Kit`, `Asian_Kit`, etc.).
-- [ ] Scatter roadside props (signs, lamp posts, fences) along road splines.
 - [ ] Apply region-appropriate textures to generated road and building meshes.
-- See [`Assets/Scripts/Procedural/BuildingGenerator.cs`](Assets/Scripts/Procedural/BuildingGenerator.cs).
+- See [`Assets/Scripts/Procedural/BuildingGenerator.cs`](Assets/Scripts/Procedural/BuildingGenerator.cs),
+  [`Assets/Scripts/Procedural/RoadsidePropPlacer.cs`](Assets/Scripts/Procedural/RoadsidePropPlacer.cs), and
+  [`Assets/Scripts/DataInversion/OSMParser.cs`](Assets/Scripts/DataInversion/OSMParser.cs).
 
 ### Phase 5 — Game State & Manager ✅
 
@@ -101,18 +104,23 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 - [x] Drift friction model — reduced sideways stiffness when the handbrake (`Space`) is held.
 - [x] Anti-roll bar on both axles to prevent cornering flips.
 - [x] Visual wheel mesh synchronisation (position + rotation).
-- [ ] Add camera follow / chase-cam controller.
+- [x] Chase-cam controller with configurable follow distance, height, look-ahead, and smoothing.
 - [ ] Add audio (engine rev, tyre squeal, collision sounds).
-- See [`Assets/Scripts/Vehicle/CarController.cs`](Assets/Scripts/Vehicle/CarController.cs).
+- See [`Assets/Scripts/Vehicle/CarController.cs`](Assets/Scripts/Vehicle/CarController.cs) and
+  [`Assets/Scripts/Vehicle/ChaseCam.cs`](Assets/Scripts/Vehicle/ChaseCam.cs).
 
-### Phase 7 — Terrain Elevation 🔲 Planned
+### Phase 7 — Terrain Elevation ⚠️ In Progress
 
 **Goal:** Apply real-world elevation data so roads and buildings sit on accurate terrain rather than a flat plane.
 
-- [ ] Integrate a DEM (Digital Elevation Model) source (e.g. SRTM, Copernicus DEM, or Cesium ion terrain).
-- [ ] Sample elevation per OSM node and set the Y component on projected `Vector3` positions.
+- [x] Define `IElevationSource` interface for pluggable DEM backends.
+- [x] Implement `OpenElevationSource` — fetches SRTM 30 m elevation data from the [Open-Elevation API](https://open-elevation.com) (no API key required, self-hostable for offline use).
+- [x] Add elevation overloads to `CoordinateConverter` (`LatLonToUnity(lat, lon, elevMetres)` and `LatLonToUnity(lat, lon, originLat, originLon, elevMetres)`) that set the Unity Y axis.
+- [ ] Sample elevation for every OSM node during map load and apply Y positions to `RoadSegment` nodes and `BuildingFootprint` corners.
 - [ ] Generate a terrain mesh or heightfield that matches the loaded elevation grid.
 - [ ] Raise road splines and building footprints to match sampled terrain heights.
+- See [`Assets/Scripts/Terrain/IElevationSource.cs`](Assets/Scripts/Terrain/IElevationSource.cs) and
+  [`Assets/Scripts/Terrain/OpenElevationSource.cs`](Assets/Scripts/Terrain/OpenElevationSource.cs).
 
 ### Phase 8 — Race Logic & HUD 🔲 Planned
 
@@ -128,8 +136,22 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 
 ## Testing
 
-Unit tests live in [`Tests/TerraDrive.Tests/`](Tests/TerraDrive.Tests/) and use NUnit on .NET 8.  
-They cover `CoordinateConverter`, `OSMParser`, `MapNode`, `MapWay`, and `RoadType`.
+Unit and integration tests live in [`Tests/TerraDrive.Tests/`](Tests/TerraDrive.Tests/) and use NUnit on .NET 8.
+They cover the following modules:
+
+| Test file | Module(s) covered |
+|---|---|
+| `CoordinateConverterTests.cs` | `CoordinateConverter` |
+| `OSMParserTests.cs` | `OSMParser`, `RoadSegment`, `BuildingFootprint` |
+| `MapNodeTests.cs` | `MapNode` |
+| `MapWayTests.cs` | `MapWay` |
+| `RoadTypeTests.cs` | `RoadType` |
+| `RegionTypeTests.cs` | `RegionType`, `OSMParser.DetectRegion` |
+| `RoadMeshExtruderTests.cs` | `RoadMeshExtruder`, `RoadMeshResult` |
+| `RoadsidePropPlacerTests.cs` | `RoadsidePropPlacer`, `PropPlacement`, `PropType` |
+| `OpenElevationSourceTests.cs` | `OpenElevationSource`, `IElevationSource` |
+| `ChaseCamIntegrationTests.cs` | `ChaseCam` (integration, renders `chase-cam-preview.png`) |
+| `MapRendererIntegrationTests.cs` | `OSMParser` + `SplineGenerator` (integration, renders `map-preview.png`) |
 
 ```bash
 dotnet test Tests/TerraDrive.Tests/TerraDrive.Tests.csproj

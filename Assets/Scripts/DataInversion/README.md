@@ -6,6 +6,9 @@ Parsing utilities that convert raw OpenStreetMap XML into strongly-typed C# data
 |---|---|
 | `OSMParser.cs` | Reads an `.osm` file and produces `List<RoadSegment>`, `List<BuildingFootprint>`, and a `RegionType` |
 | `RegionType.cs` | Enum of broad climate/biome zones inferred from OSM country tags |
+| `MapNode.cs` | Struct representing a single OSM node (id, lat, lon, elevation) |
+| `MapWay.cs` | Class representing a single OSM way (id, nodes, tags, road type) |
+| `RoadType.cs` | Enum classifying an OSM way by road surface or functional category |
 
 ## OSMParser
 

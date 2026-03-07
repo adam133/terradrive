@@ -1,10 +1,11 @@
 # Vehicle Scripts
 
-Semi-realistic car physics and player input handling.
+Semi-realistic car physics, player input handling, and camera control.
 
 | File | Purpose |
 |---|---|
 | `CarController.cs` | `WheelCollider`-based car controller with torque, friction, drift model, and anti-roll bar |
+| `ChaseCam.cs` | Smooth chase-camera that follows the vehicle using `SmoothDamp` (position) and `Slerp` (rotation) |
 
 ## CarController
 
@@ -26,3 +27,18 @@ Attach `CarController` to a vehicle root GameObject that has four `WheelCollider
 
 Reads Unity's legacy input axes: `Vertical` (throttle/brake) and `Horizontal` (steering).
 Hold `Space` to brake and trigger the drift friction model.
+
+## ChaseCam
+
+Attach `ChaseCam` to the Camera GameObject (or a camera rig) and assign the vehicle root
+`Transform` to the `target` field.
+
+### Inspector Parameters
+
+| Field | Default | Description |
+|---|---|---|
+| `followDistance` | `8` | Distance (world units) the camera maintains behind the target |
+| `height` | `3` | Height (world units) of the camera above the target pivot |
+| `lookAheadDistance` | `3` | How far ahead of the target the camera looks |
+| `positionDamping` | `5` | Positional smoothing factor — higher = snappier |
+| `rotationDamping` | `5` | Rotational smoothing factor — higher = snappier |
