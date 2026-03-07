@@ -13,7 +13,14 @@ namespace TerraDrive.Tests
     {
         private const double EarthRadius = 6_378_137.0;
 
-        // ── LatLonToUnity ──────────────────────────────────────────────────────
+        [SetUp]
+        public void SetUp()
+        {
+            // Ensure each test starts with a clean WorldOrigin state.
+            CoordinateConverter.ResetWorldOrigin();
+        }
+
+        // ── LatLonToUnity (explicit origin) ───────────────────────────────────
 
         [Test]
         public void LatLonToUnity_AtOrigin_ReturnsZeroVector()
@@ -66,20 +73,24 @@ namespace TerraDrive.Tests
         }
 
         [Test]
-        public void LatLonToUnity_OneDegreeNorth_MatchesExpectedMetres()
+        public void LatLonToUnity_OneDegreeNorth_MatchesWebMercatorMetres()
         {
-            // 1° of latitude ≈ EarthRadius * π/180 metres ≈ 111 319 m
-            double expected = EarthRadius * (Math.PI / 180.0);
+            // Web Mercator Y offset for 1° of latitude at ~52° ≈ 180 823 m
+            // Y = R * (ln(tan(π/4 + 52.5°/2)) − ln(tan(π/4 + 51.5°/2)))
+            double y1 = EarthRadius * Math.Log(Math.Tan(Math.PI / 4.0 + 51.5 * Math.PI / 360.0));
+            double y2 = EarthRadius * Math.Log(Math.Tan(Math.PI / 4.0 + 52.5 * Math.PI / 360.0));
+            double expected = y2 - y1;
+
             Vector3 result = CoordinateConverter.LatLonToUnity(52.5, 0.0, 51.5, 0.0);
 
             Assert.That(result.z, Is.EqualTo((float)expected).Within(1.0f),
-                "1° north should be ~111 319 m in Z");
+                "1° north at ~52° should match Web Mercator Y offset");
         }
 
         [Test]
         public void LatLonToUnity_OneDegreeEastAtEquator_MatchesExpectedMetres()
         {
-            // At the equator 1° longitude ≈ EarthRadius * π/180 metres
+            // At the equator Web Mercator X = R * λ, same as equirectangular.
             double expected = EarthRadius * (Math.PI / 180.0);
             Vector3 result = CoordinateConverter.LatLonToUnity(0.0, 1.0, 0.0, 0.0);
 
@@ -87,7 +98,7 @@ namespace TerraDrive.Tests
                 "1° east at equator should be ~111 319 m in X");
         }
 
-        // ── UnityToLatLon ──────────────────────────────────────────────────────
+        // ── UnityToLatLon (explicit origin) ───────────────────────────────────
 
         [Test]
         public void UnityToLatLon_AtWorldZero_ReturnsOrigin()
@@ -116,6 +127,79 @@ namespace TerraDrive.Tests
                 "Round-trip latitude should match input within 10 m");
             Assert.That(outLon, Is.EqualTo(inputLon).Within(1e-4),
                 "Round-trip longitude should match input within 10 m");
+        }
+
+        // ── WorldOrigin auto-initialisation ───────────────────────────────────
+
+        [Test]
+        public void WorldOrigin_AutoInit_FirstCallReturnsZeroVector()
+        {
+            // With no explicit origin, first call should return (0, 0, 0).
+            Vector3 result = CoordinateConverter.LatLonToUnity(51.5, -0.12);
+
+            Assert.That(result.x, Is.EqualTo(0f).Within(1e-3f));
+            Assert.That(result.y, Is.EqualTo(0f));
+            Assert.That(result.z, Is.EqualTo(0f).Within(1e-3f));
+        }
+
+        [Test]
+        public void WorldOrigin_AutoInit_SecondCallIsRelativeToFirst()
+        {
+            CoordinateConverter.LatLonToUnity(51.5, -0.12);   // sets origin
+            Vector3 second = CoordinateConverter.LatLonToUnity(51.6, -0.12);
+
+            Assert.That(second.x, Is.EqualTo(0f).Within(1e-3f),
+                "Same longitude → X offset should be zero");
+            Assert.That(second.z, Is.GreaterThan(0f),
+                "More northerly point should have positive Z");
+        }
+
+        [Test]
+        public void WorldOrigin_ExplicitOrigin_SetsWorldOriginProperty()
+        {
+            double originLat = 51.5;
+            double originLon = -0.12;
+            CoordinateConverter.LatLonToUnity(51.5, -0.12, originLat, originLon);
+
+            // X = R * originLon (in radians)
+            double expectedX = EarthRadius * originLon * (Math.PI / 180.0);
+            // Y = R * ln(tan(π/4 + originLat/2))
+            double expectedY = EarthRadius * Math.Log(Math.Tan(Math.PI / 4.0 + originLat * Math.PI / 360.0));
+
+            Assert.That(CoordinateConverter.WorldOrigin.X, Is.EqualTo(expectedX).Within(1e-3),
+                "WorldOrigin.X should equal Mercator X of origin longitude");
+            Assert.That(CoordinateConverter.WorldOrigin.Y, Is.EqualTo(expectedY).Within(1e-3),
+                "WorldOrigin.Y should equal Mercator Y of origin latitude");
+        }
+
+        [Test]
+        public void WorldOrigin_Reset_AllowsReInitialisation()
+        {
+            CoordinateConverter.LatLonToUnity(51.5, -0.12);   // sets origin
+            CoordinateConverter.ResetWorldOrigin();
+            Vector3 afterReset = CoordinateConverter.LatLonToUnity(52.0, 0.0);
+
+            Assert.That(afterReset.x, Is.EqualTo(0f).Within(1e-3f),
+                "After reset the new first call should return zero X");
+            Assert.That(afterReset.z, Is.EqualTo(0f).Within(1e-3f),
+                "After reset the new first call should return zero Z");
+        }
+
+        [Test]
+        public void UnityToLatLon_AutoOrigin_RoundTrip()
+        {
+            double inputLat = 51.52;
+            double inputLon = -0.10;
+
+            // First call sets origin automatically.
+            CoordinateConverter.LatLonToUnity(51.5, -0.12);
+            Vector3 worldPos = CoordinateConverter.LatLonToUnity(inputLat, inputLon);
+            var (outLat, outLon) = CoordinateConverter.UnityToLatLon(worldPos);
+
+            Assert.That(outLat, Is.EqualTo(inputLat).Within(1e-4),
+                "Round-trip latitude should match input");
+            Assert.That(outLon, Is.EqualTo(inputLon).Within(1e-4),
+                "Round-trip longitude should match input");
         }
     }
 }
