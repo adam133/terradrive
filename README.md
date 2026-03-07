@@ -41,40 +41,99 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 
 ## Phased Implementation Plan
 
-### Phase 1 — Data Scraper (Python / C#)
+### Phase 1 — Data Scraper (Python / C#) ✅
 
 **Goal:** Given a GPS coordinate, produce a clean `.osm` file of nearby roads and elevation data.
 
-- Use the [Overpass API](https://overpass-api.de/) to download road data within a configurable radius (default 5 km).
-- Save `.osm` files to a local project folder for offline / editor use.
+- [x] Use the [Overpass API](https://overpass-api.de/) to download road data within a configurable radius (default 5 km).
+- [x] Save `.osm` files to a local project folder for offline / editor use.
+- [ ] Optionally bundle elevation/DEM data alongside the `.osm` download.
 - See [`Tools/osm_downloader.py`](Tools/osm_downloader.py) and [`Tools/README.md`](Tools/README.md).
 
-### Phase 2 — Spline Generator
+### Phase 2 — Spline Generator ✅
 
 **Goal:** Convert raw OSM nodes (lat/lon points) into smooth Catmull-Rom splines visible in the editor.
 
-- Parse OSM `<way>` elements tagged with `highway` into `RoadSegment` objects.
-- Project WGS-84 GPS coordinates to Unity world-space XZ using a Mercator projection.
-- Fit a Catmull-Rom spline through the projected points.
+- [x] Parse OSM `<way>` elements tagged with `highway` into `RoadSegment` objects.
+- [x] Parse OSM `<way>` elements tagged with `building` into `BuildingFootprint` objects.
+- [x] Project WGS-84 GPS coordinates to Unity world-space XZ using a Web Mercator (EPSG:3857) projection (offsets are in metres near the origin; scale distortion increases at high latitudes).
+- [x] Fit a Catmull-Rom spline through the projected points.
+- [x] Model raw OSM nodes and ways as typed C# structs/classes (`MapNode`, `MapWay`, `RoadType`).
 - See [`Assets/Scripts/DataInversion/OSMParser.cs`](Assets/Scripts/DataInversion/OSMParser.cs) and
   [`Assets/Scripts/Procedural/SplineGenerator.cs`](Assets/Scripts/Procedural/SplineGenerator.cs).
 
-### Phase 3 — Mesh Extruder
+### Phase 3 — Mesh Extruder ✅
 
 **Goal:** Turn a spline into a drivable, UV-mapped 3D road mesh.
 
-- Extrude a configurable-width road mesh along each spline.
-- Generate UV coordinates suitable for a tiling asphalt texture.
+- [x] Extrude a configurable-width road mesh along each spline.
+- [x] Generate UV coordinates suitable for a tiling asphalt texture.
+- [ ] Add road-type-based width variation (motorways wider than residential streets).
+- [ ] Add kerbs and lane markings as separate meshes or UV channels.
 - See [`Assets/Scripts/Procedural/RoadMeshExtruder.cs`](Assets/Scripts/Procedural/RoadMeshExtruder.cs).
 
-### Phase 4 — Biomes & Asset Scatterer
+### Phase 4 — Biomes & Asset Scatterer ⚠️ In Progress
 
 **Goal:** Populate roadsides with region-appropriate props (signs, lamp posts, buildings).
 
-- Read the `country` or `addr:country` tag from OSM nodes.
-- Select prefabs from the matching regional kit folder (`European_Kit`, `Asian_Kit`, etc.).
-- Extrude building footprints into 3D meshes with randomised heights.
+- [x] Extrude building footprints into 3D wall and roof meshes with deterministic randomised heights.
+- [ ] Read the `country` or `addr:country` tag from OSM nodes to detect region/biome.
+- [ ] Select prefabs from the matching regional kit folder (`European_Kit`, `Asian_Kit`, etc.).
+- [ ] Scatter roadside props (signs, lamp posts, fences) along road splines.
+- [ ] Apply region-appropriate textures to generated road and building meshes.
 - See [`Assets/Scripts/Procedural/BuildingGenerator.cs`](Assets/Scripts/Procedural/BuildingGenerator.cs).
+
+### Phase 5 — Game State & Manager ✅
+
+**Goal:** Wire up a singleton game-state machine to coordinate map loading, level generation, and racing.
+
+- [x] Implement `GameManager` singleton with a `GameState` enum (`MainMenu`, `LoadingMap`, `GeneratingLevel`, `Racing`, `Paused`, `Results`).
+- [x] Expose `OnStateChanged` events so subsystems can react without tight coupling.
+- [ ] Connect `GameManager` state transitions to the OSM loading and procedural generation pipeline.
+- [ ] Implement an in-editor **TerraDrive → Load OSM File / Generate Level** menu item.
+- See [`Assets/Scripts/Core/GameManager.cs`](Assets/Scripts/Core/GameManager.cs).
+
+### Phase 6 — Vehicle Physics ✅
+
+**Goal:** Implement a semi-realistic car controller that feels fun to drive on procedurally generated roads.
+
+- [x] `WheelCollider`-based rear-wheel-drive car with configurable motor torque, brake torque, and steering angle.
+- [x] Drift friction model — reduced sideways stiffness when the handbrake (`Space`) is held.
+- [x] Anti-roll bar on both axles to prevent cornering flips.
+- [x] Visual wheel mesh synchronisation (position + rotation).
+- [ ] Add camera follow / chase-cam controller.
+- [ ] Add audio (engine rev, tyre squeal, collision sounds).
+- See [`Assets/Scripts/Vehicle/CarController.cs`](Assets/Scripts/Vehicle/CarController.cs).
+
+### Phase 7 — Terrain Elevation 🔲 Planned
+
+**Goal:** Apply real-world elevation data so roads and buildings sit on accurate terrain rather than a flat plane.
+
+- [ ] Integrate a DEM (Digital Elevation Model) source (e.g. SRTM, Copernicus DEM, or Cesium ion terrain).
+- [ ] Sample elevation per OSM node and set the Y component on projected `Vector3` positions.
+- [ ] Generate a terrain mesh or heightfield that matches the loaded elevation grid.
+- [ ] Raise road splines and building footprints to match sampled terrain heights.
+
+### Phase 8 — Race Logic & HUD 🔲 Planned
+
+**Goal:** Turn the open-world drive into a timed race with checkpoints, lap counting, and a results screen.
+
+- [ ] Define race checkpoints along the generated road splines.
+- [ ] Implement lap timing and best-lap tracking.
+- [ ] Build a HUD (speedometer, lap timer, position, minimap).
+- [ ] Add a results / podium screen wired to the `GameManager.Results` state.
+- [ ] Implement AI opponent vehicles that follow the road spline.
+
+---
+
+## Testing
+
+Unit tests live in [`Tests/TerraDrive.Tests/`](Tests/TerraDrive.Tests/) and use NUnit on .NET 8.  
+They cover `CoordinateConverter`, `OSMParser`, `MapNode`, `MapWay`, and `RoadType`.
+
+```bash
+dotnet test Tests/TerraDrive.Tests/TerraDrive.Tests.csproj
+```
 
 ---
 
@@ -85,6 +144,7 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 - Unity 2022.3 LTS or later (URP or HDRP recommended)
 - Python 3.9+ (for the OSM downloader tool)
 - `requests` Python package (`pip install requests`)
+- .NET 8 SDK (for running unit tests outside Unity)
 
 ### Download Map Data
 
@@ -105,7 +165,8 @@ python osm_downloader.py --lat 51.5074 --lon -0.1278 --radius 5000 --output ../A
 
 - **Work in Editor Mode first.** Write Editor Scripts that let you click a button to download the map and generate the level. Move to runtime generation only after the pipeline is solid.
 - **Use Mock Data.** Before battling the Overpass API, feed the parser a small hand-crafted JSON/XML file with four coordinates to build a test road.
-- **The Y-Axis Problem.** Real-world coordinates are Latitude/Longitude; Unity uses metres. Always use `CoordinateConverter.LatLonToUnity()` (see [`Assets/Scripts/Core/CoordinateConverter.cs`](Assets/Scripts/Core/CoordinateConverter.cs)) to convert WGS-84 to world space.
+- **The Y-Axis Problem.** Real-world coordinates are Latitude/Longitude; Unity uses metres. Always use `CoordinateConverter.LatLonToUnity()` (see [`Assets/Scripts/Core/CoordinateConverter.cs`](Assets/Scripts/Core/CoordinateConverter.cs)) to convert WGS-84 to world space. Note that scale distortion increases at higher latitudes, so large maps may need correction.
+- **Deterministic Builds.** `BuildingGenerator` seeds its RNG from the OSM `WayId`, so the same map always produces an identical city skyline — useful for reproducible testing.
 
 ---
 
