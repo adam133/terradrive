@@ -45,22 +45,25 @@ namespace TerraDrive.DataInversion
     ///
     /// Usage:
     /// <code>
-    ///   var (roads, buildings) = OSMParser.Parse("Assets/Data/london.osm", originLat, originLon);
+    ///   var (roads, buildings, region) = OSMParser.Parse("Assets/Data/london.osm", originLat, originLon);
     /// </code>
     /// </summary>
     public static class OSMParser
     {
         /// <summary>
-        /// Parses an <c>.osm</c> file and returns all highway and building ways.
+        /// Parses an <c>.osm</c> file and returns all highway and building ways together
+        /// with the detected <see cref="RegionType"/> inferred from <c>country</c> or
+        /// <c>addr:country</c> tags on OSM nodes.
         /// </summary>
         /// <param name="filePath">Absolute or project-relative path to the <c>.osm</c> file.</param>
         /// <param name="originLat">Map origin latitude — maps to world (0, 0, 0).</param>
         /// <param name="originLon">Map origin longitude — maps to world (0, 0, 0).</param>
         /// <returns>
-        /// A tuple containing a list of <see cref="RoadSegment"/>s and a list of
-        /// <see cref="BuildingFootprint"/>s.
+        /// A tuple containing a list of <see cref="RoadSegment"/>s, a list of
+        /// <see cref="BuildingFootprint"/>s, and a <see cref="RegionType"/> derived from
+        /// the most common country code found on nodes in the file.
         /// </returns>
-        public static (List<RoadSegment> roads, List<BuildingFootprint> buildings)
+        public static (List<RoadSegment> roads, List<BuildingFootprint> buildings, RegionType region)
             Parse(string filePath, double originLat, double originLon)
         {
             XDocument doc = XDocument.Load(filePath);
@@ -107,11 +110,113 @@ namespace TerraDrive.DataInversion
                 }
             }
 
-            Debug.Log($"[OSMParser] Parsed {roads.Count} road segments and {buildings.Count} building footprints from '{filePath}'.");
-            return (roads, buildings);
+            // ── Detect region from node country tags ───────────────────────────
+            RegionType region = DetectRegion(root);
+
+            Debug.Log($"[OSMParser] Parsed {roads.Count} road segments, {buildings.Count} building footprints, " +
+                      $"and region '{region}' from '{filePath}'.");
+            return (roads, buildings, region);
         }
 
         // ── Private helpers ────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Scans all <c>&lt;node&gt;</c> elements in the document for <c>country</c> or
+        /// <c>addr:country</c> tags, tallies the votes, and maps the most common ISO
+        /// country code to a <see cref="RegionType"/>.
+        /// </summary>
+        private static RegionType DetectRegion(XElement root)
+        {
+            var votes = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (XElement node in root.Elements("node"))
+            {
+                foreach (XElement tag in node.Elements("tag"))
+                {
+                    string k = (string)tag.Attribute("k") ?? string.Empty;
+                    if (k != "country" && k != "addr:country")
+                        continue;
+
+                    string v = ((string)tag.Attribute("v") ?? string.Empty).Trim();
+                    if (string.IsNullOrEmpty(v))
+                        continue;
+
+                    votes.TryGetValue(v, out int count);
+                    votes[v] = count + 1;
+                }
+            }
+
+            if (votes.Count == 0)
+                return RegionType.Unknown;
+
+            string winner = string.Empty;
+            int max = 0;
+            foreach (var kv in votes)
+            {
+                if (kv.Value > max)
+                {
+                    max = kv.Value;
+                    winner = kv.Key;
+                }
+            }
+
+            return CountryCodeToRegion(winner);
+        }
+
+        /// <summary>
+        /// Maps an ISO 3166-1 alpha-2 country code to a <see cref="RegionType"/>.
+        /// Unknown or unmapped codes return <see cref="RegionType.Unknown"/>.
+        /// </summary>
+        private static RegionType CountryCodeToRegion(string countryCode)
+        {
+            return countryCode.ToUpperInvariant() switch
+            {
+                // ── Temperate ──────────────────────────────────────────────────
+                "GB" or "IE" or "DE" or "FR" or "NL" or "BE" or "LU" or
+                "AT" or "CH" or "PL" or "CZ" or "SK" or "HU" or "RO" or
+                "BG" or "SI" or "RS" or "BA" or "ME" or "MK" or "AL" or
+                "LT" or "LV" or "EE" or "US" or "CA" or "JP" or "KR" or
+                "NZ" or "CN" or "AR" or "CL"
+                    => RegionType.Temperate,
+
+                // ── Desert ─────────────────────────────────────────────────────
+                "SA" or "AE" or "QA" or "KW" or "OM" or "BH" or "YE" or
+                "IQ" or "IR" or "EG" or "LY" or "DZ" or "MA" or "MR" or
+                "ML" or "NE" or "TD" or "SD" or "ER" or "DJ" or "SO" or
+                "AF" or "PK" or "AU" or "NA" or "BW" or "PS"
+                    => RegionType.Desert,
+
+                // ── Tropical ───────────────────────────────────────────────────
+                "BR" or "CO" or "VE" or "GY" or "SR" or "EC" or "PE" or
+                "BO" or "NG" or "CI" or "GH" or "CM" or "CF" or "CG" or
+                "CD" or "GA" or "GQ" or "SS" or "UG" or "RW" or "BI" or
+                "TZ" or "KE" or "ET" or "TH" or "MY" or "ID" or "PH" or
+                "SG" or "MM" or "KH" or "LA" or "VN" or "BD" or "LK" or
+                "HN" or "GT" or "NI" or "CR" or "PA" or "MX" or "CU" or
+                "HT" or "DO" or "JM" or "TT" or "FJ" or "PG" or "SB"
+                    => RegionType.Tropical,
+
+                // ── Boreal ─────────────────────────────────────────────────────
+                "NO" or "SE" or "FI" or "RU"
+                    => RegionType.Boreal,
+
+                // ── Arctic ─────────────────────────────────────────────────────
+                "GL" or "SJ" or "IS"
+                    => RegionType.Arctic,
+
+                // ── Mediterranean ──────────────────────────────────────────────
+                "ES" or "PT" or "IT" or "GR" or "CY" or "MT" or "IL" or "LB"
+                    => RegionType.Mediterranean,
+
+                // ── Steppe ─────────────────────────────────────────────────────
+                "KZ" or "MN" or "UA" or "KG" or "TJ" or "TM" or "UZ" or
+                "AZ" or "GE"
+                    => RegionType.Steppe,
+
+                // ── Fallback ───────────────────────────────────────────────────
+                _ => RegionType.Unknown,
+            };
+        }
 
         private static Dictionary<string, string> ParseTags(XElement way)
         {

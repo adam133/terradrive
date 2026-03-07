@@ -14,6 +14,7 @@
     <Compile Include="../../Assets/Scripts/DataInversion/MapNode.cs" />
     <Compile Include="../../Assets/Scripts/DataInversion/MapWay.cs" />
     <Compile Include="../../Assets/Scripts/DataInversion/OSMParser.cs" />
+    <Compile Include="../../Assets/Scripts/DataInversion/RegionType.cs" />
     <Compile Include="../../Assets/Scripts/DataInversion/RoadType.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/RoadMeshExtruder.cs" />
   </ItemGroup>

@@ -49,7 +49,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, buildings) = OSMParser.Parse(path, 51.5000, -0.1000);
+                var (roads, buildings, _) = OSMParser.Parse(path, 51.5000, -0.1000);
 
                 Assert.That(roads.Count, Is.EqualTo(1), "Expected one road segment");
                 Assert.That(buildings.Count, Is.EqualTo(0));
@@ -77,7 +77,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _) = OSMParser.Parse(path, 51.5000, -0.1278);
+                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1278);
 
                 // The first node is exactly at the origin, so it should project to (0,0,0)
                 Vector3 origin = roads[0].Nodes[0];
@@ -104,7 +104,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _) = OSMParser.Parse(path, 51.5000, -0.1278);
+                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1278);
 
                 Vector3 northNode = roads[0].Nodes[1];
                 Assert.That(northNode.z, Is.GreaterThan(0f), "Node north of origin should have positive Z");
@@ -127,7 +127,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _) = OSMParser.Parse(path, 51.5000, -0.1278);
+                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1278);
 
                 Vector3 eastNode = roads[0].Nodes[1];
                 Assert.That(eastNode.x, Is.GreaterThan(0f), "Node east of origin should have positive X");
@@ -152,7 +152,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _) = OSMParser.Parse(path, 51.0, -0.1);
+                var (roads, _, _) = OSMParser.Parse(path, 51.0, -0.1);
 
                 Assert.That(roads[0].Tags["highway"], Is.EqualTo("trunk"));
                 Assert.That(roads[0].Tags["name"], Is.EqualTo("Test Road"));
@@ -181,7 +181,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _) = OSMParser.Parse(path, 51.5, -0.1);
+                var (roads, _, _) = OSMParser.Parse(path, 51.5, -0.1);
 
                 Assert.That(roads.Count, Is.EqualTo(2));
             }
@@ -207,7 +207,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, buildings) = OSMParser.Parse(path, 51.50, -0.10);
+                var (roads, buildings, _) = OSMParser.Parse(path, 51.50, -0.10);
 
                 Assert.That(roads.Count, Is.EqualTo(0));
                 Assert.That(buildings.Count, Is.EqualTo(1));
@@ -236,7 +236,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (_, buildings) = OSMParser.Parse(path, 51.0, -0.1);
+                var (_, buildings, _) = OSMParser.Parse(path, 51.0, -0.1);
 
                 Assert.That(buildings[0].Tags["building"], Is.EqualTo("residential"));
                 Assert.That(buildings[0].Tags["building:levels"], Is.EqualTo("3"));
@@ -266,7 +266,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, buildings) = OSMParser.Parse(path, 51.5, -0.1);
+                var (roads, buildings, _) = OSMParser.Parse(path, 51.5, -0.1);
 
                 Assert.That(roads.Count, Is.EqualTo(1));
                 Assert.That(buildings.Count, Is.EqualTo(1));
@@ -291,7 +291,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, buildings) = OSMParser.Parse(path, 51.5, -0.1);
+                var (roads, buildings, _) = OSMParser.Parse(path, 51.5, -0.1);
 
                 Assert.That(roads.Count, Is.EqualTo(0));
                 Assert.That(buildings.Count, Is.EqualTo(0));
@@ -308,7 +308,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, buildings) = OSMParser.Parse(path, 0, 0);
+                var (roads, buildings, _) = OSMParser.Parse(path, 0, 0);
 
                 Assert.That(roads.Count, Is.EqualTo(0));
                 Assert.That(buildings.Count, Is.EqualTo(0));
@@ -331,7 +331,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _) = OSMParser.Parse(path, 51.5, -0.1);
+                var (roads, _, _) = OSMParser.Parse(path, 51.5, -0.1);
 
                 // The way is still returned, but only the valid node is included
                 Assert.That(roads.Count, Is.EqualTo(1));
@@ -347,6 +347,216 @@ namespace TerraDrive.Tests
             // DirectoryNotFoundException / FileNotFoundException both inherit IOException
             Assert.Catch<System.IO.IOException>(() =>
                 OSMParser.Parse("/non/existent/path.osm", 0, 0));
+        }
+
+        // ── Region detection ───────────────────────────────────────────────────
+
+        [Test]
+        public void Parse_NodeWithAddrCountryGB_ReturnsTemperateRegion()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5' lon='-0.1'>
+    <tag k='addr:country' v='GB'/>
+  </node>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, region) = OSMParser.Parse(path, 51.5, -0.1);
+                Assert.That(region, Is.EqualTo(RegionType.Temperate));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_NodeWithCountryAE_ReturnsDesertRegion()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='24.4' lon='54.4'>
+    <tag k='country' v='AE'/>
+  </node>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, region) = OSMParser.Parse(path, 24.4, 54.4);
+                Assert.That(region, Is.EqualTo(RegionType.Desert));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_NodeWithAddrCountryBR_ReturnsTropicalRegion()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='-3.1' lon='-60.0'>
+    <tag k='addr:country' v='BR'/>
+  </node>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, region) = OSMParser.Parse(path, -3.1, -60.0);
+                Assert.That(region, Is.EqualTo(RegionType.Tropical));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_NodeWithCountryFI_ReturnsBorealRegion()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='64.9' lon='25.7'>
+    <tag k='country' v='FI'/>
+  </node>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, region) = OSMParser.Parse(path, 64.9, 25.7);
+                Assert.That(region, Is.EqualTo(RegionType.Boreal));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_NodeWithCountryGL_ReturnsArcticRegion()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='72.0' lon='-40.0'>
+    <tag k='country' v='GL'/>
+  </node>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, region) = OSMParser.Parse(path, 72.0, -40.0);
+                Assert.That(region, Is.EqualTo(RegionType.Arctic));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_NodeWithAddrCountryIT_ReturnsMediterraneanRegion()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='41.9' lon='12.5'>
+    <tag k='addr:country' v='IT'/>
+  </node>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, region) = OSMParser.Parse(path, 41.9, 12.5);
+                Assert.That(region, Is.EqualTo(RegionType.Mediterranean));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_NodeWithCountryKZ_ReturnsSteppeRegion()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.2' lon='71.4'>
+    <tag k='country' v='KZ'/>
+  </node>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, region) = OSMParser.Parse(path, 51.2, 71.4);
+                Assert.That(region, Is.EqualTo(RegionType.Steppe));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_NoCountryTags_ReturnsUnknownRegion()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5' lon='-0.1'/>
+  <node id='2' lat='51.6' lon='-0.1'/>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, region) = OSMParser.Parse(path, 51.5, -0.1);
+                Assert.That(region, Is.EqualTo(RegionType.Unknown));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_UnrecognisedCountryCode_ReturnsUnknownRegion()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='0.0' lon='0.0'>
+    <tag k='addr:country' v='XX'/>
+  </node>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, region) = OSMParser.Parse(path, 0.0, 0.0);
+                Assert.That(region, Is.EqualTo(RegionType.Unknown));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_MajorityCountryCodeWins()
+        {
+            // Three DE nodes (Temperate) and one SA node (Desert) — Temperate should win
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='52.5' lon='13.4'>
+    <tag k='addr:country' v='DE'/>
+  </node>
+  <node id='2' lat='52.5' lon='13.5'>
+    <tag k='addr:country' v='DE'/>
+  </node>
+  <node id='3' lat='52.5' lon='13.6'>
+    <tag k='addr:country' v='DE'/>
+  </node>
+  <node id='4' lat='24.7' lon='46.7'>
+    <tag k='addr:country' v='SA'/>
+  </node>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, region) = OSMParser.Parse(path, 52.5, 13.4);
+                Assert.That(region, Is.EqualTo(RegionType.Temperate));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_CountryTagCaseInsensitive_ReturnsCorrectRegion()
+        {
+            // Tags with lowercase country code should still map correctly
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5' lon='-0.1'>
+    <tag k='addr:country' v='gb'/>
+  </node>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, region) = OSMParser.Parse(path, 51.5, -0.1);
+                Assert.That(region, Is.EqualTo(RegionType.Temperate));
+            }
+            finally { DeleteFile(path); }
         }
     }
 }

@@ -60,7 +60,7 @@ namespace TerraDrive.Tests
             const double originLon = -93.5888;
 
             CoordinateConverter.ResetWorldOrigin();
-            var (roads, buildings) = OSMParser.Parse(osmPath, originLat, originLon);
+            var (roads, buildings, _) = OSMParser.Parse(osmPath, originLat, originLon);
 
             // ── Act ────────────────────────────────────────────────────────────
             using var bitmap = MapRenderer.Render(roads, buildings);
@@ -98,7 +98,7 @@ namespace TerraDrive.Tests
             string osmPath = FindOsmMapFile();
 
             CoordinateConverter.ResetWorldOrigin();
-            var (roads, buildings) = OSMParser.Parse(osmPath, 41.8957, -93.5888);
+            var (roads, buildings, _) = OSMParser.Parse(osmPath, 41.8957, -93.5888);
 
             Assert.That(roads.Count,     Is.GreaterThan(10), "Should find at least 10 roads");
             Assert.That(buildings.Count, Is.GreaterThan(0),  "Should find at least 1 building");
