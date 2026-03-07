@@ -19,6 +19,8 @@ crashlytics-build.properties
 *.csproj
 *.unityproj
 *.sln
+# Keep the hand-authored test project file
+!Tests/**/*.csproj
 *.suo
 *.tmp
 *.user
@@ -40,7 +42,11 @@ build/
 venv/
 env/
 
-# ── OS / IDE ──────────────────────────────────────────────────────────────────
+# ── .NET test project build artifacts ────────────────────────────────────────
+Tests/**/bin/
+Tests/**/obj/
+
+
 .DS_Store
 Thumbs.db
 .idea/
