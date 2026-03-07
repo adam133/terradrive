@@ -11,7 +11,10 @@
   <!-- Pull in the game source files directly so we test the real implementations -->
   <ItemGroup>
     <Compile Include="../../Assets/Scripts/Core/CoordinateConverter.cs" />
+    <Compile Include="../../Assets/Scripts/DataInversion/MapNode.cs" />
+    <Compile Include="../../Assets/Scripts/DataInversion/MapWay.cs" />
     <Compile Include="../../Assets/Scripts/DataInversion/OSMParser.cs" />
+    <Compile Include="../../Assets/Scripts/DataInversion/RoadType.cs" />
   </ItemGroup>
 
   <ItemGroup>
