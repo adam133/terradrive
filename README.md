@@ -85,7 +85,7 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 - [x] Scatter roadside props (signs, lamp posts, fences) along road splines.
 - [x] Select region-appropriate texture IDs for road and building meshes (`RegionTextures`).
 - [ ] Select prefabs from the matching regional kit folder (`European_Kit`, `Asian_Kit`, etc.).
-- [ ] Wire texture IDs to Unity material assets in the scene.
+- [x] Wire texture IDs to Unity material assets in the scene.
 - See [`Assets/Scripts/Procedural/BuildingGenerator.cs`](Assets/Scripts/Procedural/BuildingGenerator.cs),
   [`Assets/Scripts/Procedural/RoadsidePropPlacer.cs`](Assets/Scripts/Procedural/RoadsidePropPlacer.cs),
   [`Assets/Scripts/Procedural/RegionTextures.cs`](Assets/Scripts/Procedural/RegionTextures.cs), and

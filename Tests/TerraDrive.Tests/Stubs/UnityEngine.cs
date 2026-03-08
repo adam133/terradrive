@@ -128,4 +128,25 @@ namespace UnityEngine
         public static float Range(float min, float max) =>
             min + (float)_rng.NextDouble() * (max - min);
     }
+
+    /// <summary>Stub for UnityEngine.SerializeField — no-op in tests.</summary>
+    [AttributeUsage(AttributeTargets.Field)]
+    public class SerializeFieldAttribute : Attribute { }
+
+    /// <summary>Stub for UnityEngine.MonoBehaviour — base class for Unity components.</summary>
+    public class MonoBehaviour { }
+
+    /// <summary>Stub for UnityEngine.Material — minimal surface material.</summary>
+    public class Material
+    {
+        public string name { get; set; }
+
+        public Material(string name = "") { this.name = name ?? string.Empty; }
+    }
+
+    /// <summary>Stub for UnityEngine.MeshRenderer — holds a shared material reference.</summary>
+    public class MeshRenderer
+    {
+        public Material sharedMaterial { get; set; }
+    }
 }

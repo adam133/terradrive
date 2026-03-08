@@ -12,6 +12,7 @@ Mesh-generation systems that convert parsed OSM data into drivable geometry and 
 | `BuildingGenerator.cs` | Extrudes building footprints into 3D meshes with randomised heights |
 | `BuildingMeshResult.cs` | Result type returned by `BuildingGenerator.Extrude` (meshes + texture IDs) |
 | `RegionTextures.cs` | Maps `RegionType` to region-appropriate texture asset IDs for roads and buildings |
+| `MaterialRegistry.cs` | Scene MonoBehaviour that maps texture-ID strings to Unity `Material` assets; apply via `ApplyTo(renderer, textureId)` |
 | `RoadsidePropPlacer.cs` | Scatters roadside props (lamp posts, trees, signs, fences) along a road spline |
 | `PropPlacement.cs` | Data struct describing a single prop's world-space position, orientation, and type |
 | `PropType.cs` | Enum of prop types: `LampPost`, `Tree`, `SignPost`, `Fence` |
@@ -64,7 +65,8 @@ With kerbs, lane-marking UV channel, and region-appropriate texture IDs:
 RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(splinePoints, RoadType.Primary, region: region);
 roadFilter.sharedMesh = result.RoadMesh;   // UV0 = asphalt (10 m tile), UV1 = lane markings (6 m tile)
 kerbFilter.sharedMesh = result.KerbMesh;   // 4 verts/point, elevated by 0.05 m, width 0.15 m
-// Apply materials keyed by result.RoadTextureId and result.KerbTextureId
+materialRegistry.ApplyTo(roadRenderer, result.RoadTextureId);
+materialRegistry.ApplyTo(kerbRenderer, result.KerbTextureId);
 ```
 
 Road widths are selected automatically by `RoadType` (e.g. `Motorway` = 20 m, `Residential` = 5.5 m).
@@ -75,11 +77,41 @@ Road widths are selected automatically by `RoadType` (e.g. `Motorway` = 20 m, `R
 BuildingMeshResult result = BuildingGenerator.Extrude(footprint, minHeight: 5f, maxHeight: 15f, wayId, region);
 wallFilter.sharedMesh = result.WallMesh;
 roofFilter.sharedMesh = result.RoofMesh;
-// Apply materials keyed by result.WallTextureId and result.RoofTextureId
+materialRegistry.ApplyTo(wallRenderer, result.WallTextureId);
+materialRegistry.ApplyTo(roofRenderer, result.RoofTextureId);
 ```
 
 Heights are randomised per-building using a seeded RNG derived from the OSM `WayId`, so the
 same map always produces the same city skyline.
+
+## MaterialRegistry
+
+`MaterialRegistry` is a scene MonoBehaviour that bridges the texture-ID strings produced by
+`RegionTextures` (and carried in `RoadMeshResult` / `BuildingMeshResult`) to real Unity
+`Material` assets.
+
+Add it to a GameObject in the scene and populate the **Entries** list in the Inspector — one
+row per texture ID.  All 25 IDs are pre-populated in `Assets/Scenes/ProofOfConcept.unity`
+with null material slots; drag your material assets into each slot.
+
+```csharp
+// Apply road and kerb materials after extrusion:
+RoadMeshResult road = RoadMeshExtruder.ExtrudeWithDetails(spline, roadType, region: region);
+roadRenderer.sharedMesh = road.RoadMesh;
+materialRegistry.ApplyTo(roadRenderer, road.RoadTextureId);
+
+kerbRenderer.sharedMesh = road.KerbMesh;
+materialRegistry.ApplyTo(kerbRenderer, road.KerbTextureId);
+```
+
+You can also register materials at runtime:
+
+```csharp
+materialRegistry.Register("road_asphalt_temperate", myMaterial);
+```
+
+`GetMaterial(textureId)` returns the registered `Material` or `null` if the ID is not found.
+`ApplyTo(renderer, textureId)` is a no-op when the renderer or material is null.
 
 ## RegionTextures
 
