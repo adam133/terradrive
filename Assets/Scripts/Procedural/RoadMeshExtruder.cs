@@ -184,6 +184,13 @@ namespace TerraDrive.Procedural
         /// Climate zone used to select region-appropriate texture identifiers.
         /// Defaults to <see cref="RegionType.Unknown"/>.
         /// </param>
+        /// <param name="surfaceSeed">
+        /// When non-null, <see cref="RoadSurfaceDeformer"/> is applied to the spline
+        /// before mesh generation, introducing road-class-appropriate Y-axis
+        /// imperfections (dips, bumps, potholes).  Pass the OSM way ID (cast to
+        /// <c>int</c>) for stable, per-road deformation.  <c>null</c> (default)
+        /// produces a perfectly flat surface, which is useful for unit tests.
+        /// </param>
         /// <returns>
         /// A <see cref="RoadMeshResult"/> containing the road mesh, the kerb mesh,
         /// and region-appropriate texture identifiers.
@@ -195,7 +202,8 @@ namespace TerraDrive.Procedural
             float laneMarkingTileLength  = DefaultLaneMarkingTileLength,
             float kerbWidth              = DefaultKerbWidth,
             float kerbHeight             = DefaultKerbHeight,
-            RegionType region            = RegionType.Unknown) =>
+            RegionType region            = RegionType.Unknown,
+            int? surfaceSeed             = null) =>
             ExtrudeWithDetails(
                 splinePoints,
                 GetWidthForRoadType(roadType),
@@ -204,7 +212,8 @@ namespace TerraDrive.Procedural
                 kerbWidth,
                 kerbHeight,
                 region,
-                roadType);
+                roadType,
+                surfaceSeed);
 
         /// <summary>
         /// Generates a road surface mesh (with UV0 for asphalt tiling and UV1 for
@@ -232,6 +241,13 @@ namespace TerraDrive.Procedural
         /// Road classification used for surface texture selection.
         /// Defaults to <see cref="RoadType.Unknown"/>.
         /// </param>
+        /// <param name="surfaceSeed">
+        /// When non-null, <see cref="RoadSurfaceDeformer"/> is applied to the spline
+        /// before mesh generation, introducing road-class-appropriate Y-axis
+        /// imperfections (dips, bumps, potholes).  Pass the OSM way ID (cast to
+        /// <c>int</c>) for stable, per-road deformation.  <c>null</c> (default)
+        /// produces a perfectly flat surface.
+        /// </param>
         /// <returns>
         /// A <see cref="RoadMeshResult"/> containing the road mesh, the kerb mesh,
         /// and region-appropriate texture identifiers.
@@ -244,7 +260,8 @@ namespace TerraDrive.Procedural
             float kerbWidth              = DefaultKerbWidth,
             float kerbHeight             = DefaultKerbHeight,
             RegionType region            = RegionType.Unknown,
-            RoadType roadType            = RoadType.Unknown)
+            RoadType roadType            = RoadType.Unknown,
+            int? surfaceSeed             = null)
         {
             if (splinePoints == null || splinePoints.Count < 2)
             {
@@ -252,7 +269,12 @@ namespace TerraDrive.Procedural
                 return new RoadMeshResult(new Mesh(), new Mesh(), string.Empty, string.Empty);
             }
 
-            int n = splinePoints.Count;
+            // Apply surface imperfections when a seed is provided.
+            IList<Vector3> pts = surfaceSeed.HasValue
+                ? RoadSurfaceDeformer.Deform(splinePoints, roadType, surfaceSeed.Value)
+                : splinePoints;
+
+            int n = pts.Count;
             float halfWidth = roadWidth * 0.5f;
 
             // ── Road surface mesh ────────────────────────────────────────────
@@ -264,14 +286,14 @@ namespace TerraDrive.Procedural
 
             for (int i = 0; i < n; i++)
             {
-                Vector3 tangent = ComputeTangent(splinePoints, i, n);
+                Vector3 tangent = ComputeTangent(pts, i, n);
                 Vector3 right   = Vector3.Cross(Vector3.up, tangent).normalized;
 
-                vertices[i * 2]     = splinePoints[i] - right * halfWidth;  // left edge
-                vertices[i * 2 + 1] = splinePoints[i] + right * halfWidth;  // right edge
+                vertices[i * 2]     = pts[i] - right * halfWidth;  // left edge
+                vertices[i * 2 + 1] = pts[i] + right * halfWidth;  // right edge
 
                 if (i > 0)
-                    distAlongRoad += Vector3.Distance(splinePoints[i], splinePoints[i - 1]);
+                    distAlongRoad += Vector3.Distance(pts[i], pts[i - 1]);
 
                 float v0 = distAlongRoad / uvTileLength;
                 float v1 = distAlongRoad / laneMarkingTileLength;
@@ -305,7 +327,7 @@ namespace TerraDrive.Procedural
             roadMesh.RecalculateBounds();
 
             // ── Kerb mesh ────────────────────────────────────────────────────
-            Mesh kerbMesh = BuildKerbMesh(splinePoints, halfWidth, kerbWidth, kerbHeight, uvTileLength);
+            Mesh kerbMesh = BuildKerbMesh(pts, halfWidth, kerbWidth, kerbHeight, uvTileLength);
 
             // ── Texture identifiers ──────────────────────────────────────────
             string roadTextureId = RegionTextures.GetRoadSurfaceTextureId(region, roadType);

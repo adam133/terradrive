@@ -23,6 +23,7 @@
     <Compile Include="../../Assets/Scripts/Procedural/RegionTextures.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/RoadMeshExtruder.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/RoadMeshResult.cs" />
+    <Compile Include="../../Assets/Scripts/Procedural/RoadSurfaceDeformer.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/BridgeElevator.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/RoadsidePropPlacer.cs" />
     <Compile Include="../../Assets/Scripts/Terrain/IElevationSource.cs" />
