@@ -455,6 +455,173 @@ namespace TerraDrive.Tests
             Assert.That(result.UVs,       Is.SameAs(uvs));
         }
 
+        // ── ElevationGrid.SampleElevation — bilinear interpolation ────────────
+
+        [Test]
+        public void SampleElevation_AtGridCellCenter_ReturnsExactValue()
+        {
+            // 2×2 grid: SW=10, SE=20, NW=30, NE=40
+            var elevations = new double[2, 2] { { 10.0, 20.0 }, { 30.0, 40.0 } };
+            var grid = new ElevationGrid(0.0, 1.0, 0.0, 1.0, elevations);
+
+            // Exactly at each corner.
+            Assert.That(grid.SampleElevation(0.0, 0.0), Is.EqualTo(10.0).Within(1e-10));
+            Assert.That(grid.SampleElevation(0.0, 1.0), Is.EqualTo(20.0).Within(1e-10));
+            Assert.That(grid.SampleElevation(1.0, 0.0), Is.EqualTo(30.0).Within(1e-10));
+            Assert.That(grid.SampleElevation(1.0, 1.0), Is.EqualTo(40.0).Within(1e-10));
+        }
+
+        [Test]
+        public void SampleElevation_AtCentre_ReturnsMeanOfFourCorners()
+        {
+            // 2×2 grid: four distinct elevations.  The centre (lat=0.5, lon=0.5) should
+            // bilinearly interpolate to the mean of all four corners.
+            var elevations = new double[2, 2] { { 10.0, 30.0 }, { 50.0, 70.0 } };
+            var grid = new ElevationGrid(0.0, 1.0, 0.0, 1.0, elevations);
+
+            double expected = (10.0 + 30.0 + 50.0 + 70.0) / 4.0;
+            Assert.That(grid.SampleElevation(0.5, 0.5), Is.EqualTo(expected).Within(1e-10));
+        }
+
+        [Test]
+        public void SampleElevation_MidpointAlongLatAxis_InterpolatesRows()
+        {
+            // Uniform column; varies only in the row direction.
+            var elevations = new double[2, 2] { { 0.0, 0.0 }, { 100.0, 100.0 } };
+            var grid = new ElevationGrid(0.0, 1.0, 0.0, 1.0, elevations);
+
+            // lat=0.25 → 25 % of the way from row 0 to row 1 → elevation = 25
+            Assert.That(grid.SampleElevation(0.25, 0.5), Is.EqualTo(25.0).Within(1e-10));
+        }
+
+        [Test]
+        public void SampleElevation_MidpointAlongLonAxis_InterpolateCols()
+        {
+            // Uniform row; varies only in the column direction.
+            var elevations = new double[2, 2] { { 0.0, 100.0 }, { 0.0, 100.0 } };
+            var grid = new ElevationGrid(0.0, 1.0, 0.0, 1.0, elevations);
+
+            // lon=0.6 → 60 % of the way from col 0 to col 1 → elevation = 60
+            Assert.That(grid.SampleElevation(0.5, 0.6), Is.EqualTo(60.0).Within(1e-10));
+        }
+
+        [Test]
+        public void SampleElevation_OutsideBoundsLow_ClampsToEdge()
+        {
+            var elevations = new double[2, 2] { { 5.0, 5.0 }, { 5.0, 5.0 } };
+            var grid = new ElevationGrid(10.0, 20.0, 30.0, 40.0, elevations);
+
+            // Latitude below MinLat should clamp to the southern row.
+            Assert.That(grid.SampleElevation(0.0, 35.0), Is.EqualTo(5.0).Within(1e-10));
+        }
+
+        [Test]
+        public void SampleElevation_OutsideBoundsHigh_ClampsToEdge()
+        {
+            var elevations = new double[2, 2] { { 5.0, 5.0 }, { 5.0, 5.0 } };
+            var grid = new ElevationGrid(10.0, 20.0, 30.0, 40.0, elevations);
+
+            // Latitude above MaxLat should clamp to the northern row.
+            Assert.That(grid.SampleElevation(99.0, 35.0), Is.EqualTo(5.0).Within(1e-10));
+        }
+
+        [Test]
+        public void SampleElevation_FlatGrid_AlwaysReturnsSameElevation()
+        {
+            const double elev = 42.0;
+            var elevations = new double[3, 4];
+            for (int r = 0; r < 3; r++)
+                for (int c = 0; c < 4; c++)
+                    elevations[r, c] = elev;
+
+            var grid = new ElevationGrid(10.0, 20.0, 30.0, 40.0, elevations);
+
+            Assert.That(grid.SampleElevation(10.0, 30.0), Is.EqualTo(elev).Within(1e-10));
+            Assert.That(grid.SampleElevation(15.0, 35.0), Is.EqualTo(elev).Within(1e-10));
+            Assert.That(grid.SampleElevation(20.0, 40.0), Is.EqualTo(elev).Within(1e-10));
+            Assert.That(grid.SampleElevation(12.5, 32.5), Is.EqualTo(elev).Within(1e-10));
+        }
+
+        // ── ElevationGrid as IElevationSource ─────────────────────────────────
+
+        [Test]
+        public async Task ElevationGrid_AsIElevationSource_ReturnsCorrectElevations()
+        {
+            // 2×2 grid: SW=0, SE=100, NW=200, NE=300
+            var elevations = new double[2, 2] { { 0.0, 100.0 }, { 200.0, 300.0 } };
+            var grid = new ElevationGrid(0.0, 2.0, 0.0, 2.0, elevations);
+
+            IElevationSource source = grid;
+            IReadOnlyList<double> results = await source.FetchElevationsAsync(
+                new[] { (0.0, 0.0), (2.0, 2.0) });
+
+            Assert.That(results.Count, Is.EqualTo(2));
+            Assert.That(results[0], Is.EqualTo(0.0).Within(1e-10),   "SW corner should be 0");
+            Assert.That(results[1], Is.EqualTo(300.0).Within(1e-10), "NE corner should be 300");
+        }
+
+        [Test]
+        public async Task ElevationGrid_AsIElevationSource_EmptyLocations_ReturnsEmpty()
+        {
+            var elevations = new double[2, 2];
+            var grid       = new ElevationGrid(0.0, 1.0, 0.0, 1.0, elevations);
+
+            IElevationSource source  = grid;
+            IReadOnlyList<double> results =
+                await source.FetchElevationsAsync(Array.Empty<(double, double)>());
+
+            Assert.That(results.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void ElevationGrid_AsIElevationSource_NullLocations_ThrowsArgumentNullException()
+        {
+            var elevations = new double[2, 2];
+            var grid       = new ElevationGrid(0.0, 1.0, 0.0, 1.0, elevations);
+
+            IElevationSource source = grid;
+            Assert.ThrowsAsync<ArgumentNullException>(
+                () => source.FetchElevationsAsync(null!));
+        }
+
+        [Test]
+        public void ElevationGrid_AsIElevationSource_CancellationRequested_ThrowsOperationCanceledException()
+        {
+            var elevations = new double[2, 2] { { 1.0, 2.0 }, { 3.0, 4.0 } };
+            var grid       = new ElevationGrid(0.0, 1.0, 0.0, 1.0, elevations);
+
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            IElevationSource source = grid;
+            Assert.ThrowsAsync<OperationCanceledException>(
+                () => source.FetchElevationsAsync(
+                    new[] { (0.5, 0.5) }, cts.Token));
+        }
+
+        [Test]
+        public async Task ElevationGrid_AsIElevationSource_CanBeUsedWithSampleAsync()
+        {
+            // Build a source grid with known elevations.
+            var sourceElevations = new double[3, 3]
+            {
+                {  0.0,  10.0,  20.0 },
+                { 30.0,  40.0,  50.0 },
+                { 60.0,  70.0,  80.0 },
+            };
+            var sourceGrid = new ElevationGrid(0.0, 2.0, 0.0, 2.0, sourceElevations);
+
+            // Resample the same extent at 2×2 using the source grid as the IElevationSource.
+            ElevationGrid resampledGrid = await ElevationGrid.SampleAsync(
+                0.0, 2.0, 0.0, 2.0, rows: 2, cols: 2, sourceGrid);
+
+            // Corners of the resampled grid should match the corners of the source grid.
+            Assert.That(resampledGrid[0, 0], Is.EqualTo(0.0).Within(1e-10),  "SW corner");
+            Assert.That(resampledGrid[0, 1], Is.EqualTo(20.0).Within(1e-10), "SE corner");
+            Assert.That(resampledGrid[1, 0], Is.EqualTo(60.0).Within(1e-10), "NW corner");
+            Assert.That(resampledGrid[1, 1], Is.EqualTo(80.0).Within(1e-10), "NE corner");
+        }
+
         // ── Helpers ───────────────────────────────────────────────────────────
 
         /// <summary>Creates a flat elevation grid (all cells at the same elevation).</summary>

@@ -15,8 +15,16 @@ namespace TerraDrive.Terrain
     /// The grid can be constructed directly (e.g. from a cached DEM file) or produced via
     /// <see cref="SampleAsync"/> which batch-fetches elevations from an
     /// <see cref="IElevationSource"/>.
+    /// <para>
+    /// <see cref="ElevationGrid"/> also implements <see cref="IElevationSource"/> via
+    /// <see cref="SampleElevation"/>, so a pre-built grid can be passed directly to
+    /// <see cref="ElevationGrid.SampleAsync"/> or to any API that accepts an
+    /// <see cref="IElevationSource"/> (e.g. <c>OSMParser.ParseAsync</c>) to lift road
+    /// splines and building footprints to match the terrain surface without issuing
+    /// additional network requests.
+    /// </para>
     /// </summary>
-    public sealed class ElevationGrid
+    public sealed class ElevationGrid : IElevationSource
     {
         private readonly double[,] _elevations;
 
@@ -79,6 +87,73 @@ namespace TerraDrive.Terrain
         /// <summary>Returns the longitude in decimal degrees for the given column index.</summary>
         public double LonAtCol(int col)
             => MinLon + (MaxLon - MinLon) * col / (Cols - 1);
+
+        /// <summary>
+        /// Returns the terrain elevation in metres at the given geographic coordinate using
+        /// bilinear interpolation between the four nearest grid cells.
+        ///
+        /// <para>
+        /// Coordinates outside the grid extent are clamped to the nearest boundary so that
+        /// callers do not need to guard against minor floating-point overshoots.
+        /// </para>
+        /// </summary>
+        /// <param name="lat">Latitude in decimal degrees.</param>
+        /// <param name="lon">Longitude in decimal degrees.</param>
+        /// <returns>Interpolated elevation in metres above sea level.</returns>
+        public double SampleElevation(double lat, double lon)
+        {
+            // Clamp to grid bounds so out-of-range values get the nearest edge value.
+            lat = Math.Clamp(lat, MinLat, MaxLat);
+            lon = Math.Clamp(lon, MinLon, MaxLon);
+
+            // Continuous row/column index (0-based, floating point).
+            double rowF = (lat - MinLat) / (MaxLat - MinLat) * (Rows - 1);
+            double colF = (lon - MinLon) / (MaxLon - MinLon) * (Cols - 1);
+
+            // Integer cell indices for the south-west corner of the enclosing quad.
+            int r0 = Math.Clamp((int)Math.Floor(rowF), 0, Rows - 2);
+            int c0 = Math.Clamp((int)Math.Floor(colF), 0, Cols - 2);
+            int r1 = r0 + 1;
+            int c1 = c0 + 1;
+
+            // Fractional offsets within the cell.
+            double tr = rowF - r0;
+            double tc = colF - c0;
+
+            // Bilinear interpolation across the four cell corners.
+            return _elevations[r0, c0] * (1.0 - tr) * (1.0 - tc)
+                 + _elevations[r0, c1] * (1.0 - tr) * tc
+                 + _elevations[r1, c0] * tr           * (1.0 - tc)
+                 + _elevations[r1, c1] * tr           * tc;
+        }
+
+        /// <summary>
+        /// Implements <see cref="IElevationSource"/> by sampling this grid via
+        /// <see cref="SampleElevation"/> for each supplied location.
+        ///
+        /// <para>
+        /// This allows a pre-built <see cref="ElevationGrid"/> to be used wherever an
+        /// <see cref="IElevationSource"/> is expected — for example, passing a terrain grid
+        /// directly to <c>OSMParser.ParseAsync</c> to raise road splines and building
+        /// footprints to match the terrain surface without issuing additional network
+        /// requests (Unity scene wiring).
+        /// </para>
+        /// </summary>
+        public Task<IReadOnlyList<double>> FetchElevationsAsync(
+            IReadOnlyList<(double lat, double lon)> locations,
+            CancellationToken cancellationToken = default)
+        {
+            if (locations == null) throw new ArgumentNullException(nameof(locations));
+
+            var results = new double[locations.Count];
+            for (int i = 0; i < locations.Count; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                results[i] = SampleElevation(locations[i].lat, locations[i].lon);
+            }
+
+            return Task.FromResult<IReadOnlyList<double>>(results);
+        }
 
         /// <summary>
         /// Samples terrain elevation for a regular grid of lat/lon points using the supplied
