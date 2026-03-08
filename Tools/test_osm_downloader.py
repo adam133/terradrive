@@ -28,6 +28,7 @@ import xml.etree.ElementTree as ET
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 # Make sure osm_downloader is importable when running from the repo root or
 # from the Tools/ directory.
@@ -143,13 +144,108 @@ class TestDownloadOsm(unittest.TestCase):
 
     @patch("osm_downloader.requests.post")
     def test_raises_on_http_error(self, mock_post):
-        import requests
-        mock_resp = self._make_mock_response("", status_code=429)
-        mock_resp.raise_for_status.side_effect = requests.HTTPError("429 Too Many Requests")
+        mock_resp = self._make_mock_response("", status_code=503)
+        mock_resp.raise_for_status.side_effect = requests.HTTPError("503 Service Unavailable")
         mock_post.return_value = mock_resp
 
         with self.assertRaises(requests.HTTPError):
             osm_downloader.download_osm(51.5, -0.1, 1000)
+
+
+# ---------------------------------------------------------------------------
+# Retry behaviour on 429 Too Many Requests (time.sleep mocked)
+# ---------------------------------------------------------------------------
+
+class TestRetryBehavior(unittest.TestCase):
+    """
+    Verifies that download_osm retries on HTTP 429 with exponential backoff,
+    succeeds once a subsequent attempt returns 200, and raises after all
+    retries are exhausted.
+
+    time.sleep is patched so tests run instantly.
+    """
+
+    def _make_429(self, retry_after=None):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 429
+        headers = {}
+        if retry_after is not None:
+            headers["Retry-After"] = str(retry_after)
+        mock_resp.headers = headers
+        mock_resp.raise_for_status.side_effect = requests.HTTPError("429 Too Many Requests")
+        return mock_resp
+
+    def _make_200(self):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.text = SAMPLE_OVERPASS_XML
+        mock_resp.content = SAMPLE_OVERPASS_XML.encode()
+        mock_resp.raise_for_status = MagicMock()
+        return mock_resp
+
+    @patch("osm_downloader.time.sleep")
+    @patch("osm_downloader.requests.post")
+    def test_retries_on_429_and_succeeds(self, mock_post, mock_sleep):
+        """A 429 followed by a 200 succeeds and returns the XML."""
+        mock_post.side_effect = [self._make_429(), self._make_200()]
+
+        result = osm_downloader.download_osm(51.5, -0.1, 1000)
+
+        self.assertEqual(result, SAMPLE_OVERPASS_XML)
+        self.assertEqual(mock_post.call_count, 2)
+        mock_sleep.assert_called_once()
+
+    @patch("osm_downloader.time.sleep")
+    @patch("osm_downloader.requests.post")
+    def test_raises_after_max_retries_exhausted(self, mock_post, mock_sleep):
+        """Raises HTTPError once all retries are exhausted."""
+        mock_post.side_effect = [self._make_429()] * (osm_downloader._MAX_RETRIES + 1)
+
+        with self.assertRaises(requests.HTTPError):
+            osm_downloader.download_osm(51.5, -0.1, 1000)
+
+        self.assertEqual(mock_post.call_count, osm_downloader._MAX_RETRIES + 1)
+
+    @patch("osm_downloader.time.sleep")
+    @patch("osm_downloader.requests.post")
+    def test_retry_after_header_sets_sleep_delay(self, mock_post, mock_sleep):
+        """Retry-After header value is used as the sleep delay."""
+        mock_post.side_effect = [self._make_429(retry_after=30), self._make_200()]
+
+        osm_downloader.download_osm(51.5, -0.1, 1000)
+
+        mock_sleep.assert_called_once_with(30.0)
+
+    @patch("osm_downloader.time.sleep")
+    @patch("osm_downloader.requests.post")
+    def test_exponential_backoff_without_retry_after(self, mock_post, mock_sleep):
+        """Without a Retry-After header, delay doubles on each attempt."""
+        mock_post.side_effect = [
+            self._make_429(),  # attempt 0 → sleep BASE * 2^0
+            self._make_429(),  # attempt 1 → sleep BASE * 2^1
+            self._make_200(),
+        ]
+
+        osm_downloader.download_osm(51.5, -0.1, 1000)
+
+        delays = [call.args[0] for call in mock_sleep.call_args_list]
+        self.assertEqual(delays[0], osm_downloader._BACKOFF_BASE * (2 ** 0))
+        self.assertEqual(delays[1], osm_downloader._BACKOFF_BASE * (2 ** 1))
+
+    @patch("osm_downloader.time.sleep")
+    @patch("osm_downloader.requests.post")
+    def test_non_429_error_raises_immediately(self, mock_post, mock_sleep):
+        """A 503 error is not retried and raises immediately."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 503
+        mock_resp.raise_for_status.side_effect = requests.HTTPError("503 Service Unavailable")
+        mock_post.return_value = mock_resp
+
+        with self.assertRaises(requests.HTTPError):
+            osm_downloader.download_osm(51.5, -0.1, 1000)
+
+        mock_post.assert_called_once()
+        mock_sleep.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
@@ -387,7 +483,6 @@ class TestMain(unittest.TestCase):
 
     @patch("osm_downloader.requests.post")
     def test_main_exits_on_http_error(self, mock_post):
-        import requests
         mock_resp = MagicMock()
         mock_resp.raise_for_status.side_effect = requests.HTTPError("503")
         mock_post.return_value = mock_resp

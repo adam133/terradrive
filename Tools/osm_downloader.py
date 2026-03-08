@@ -14,6 +14,7 @@ Requirements:
 import argparse
 import os
 import sys
+import time
 
 import requests
 
@@ -29,6 +30,10 @@ OVERPASS_QUERY_TEMPLATE = """
 out body;
 """.strip()
 
+# Retry configuration for 429 Too Many Requests responses.
+_MAX_RETRIES = 5
+_BACKOFF_BASE = 2  # seconds; delay = BACKOFF_BASE * 2^attempt
+
 
 def build_query(lat: float, lon: float, radius: int) -> str:
     """Return an Overpass QL query string for the given position and radius."""
@@ -38,6 +43,10 @@ def build_query(lat: float, lon: float, radius: int) -> str:
 def download_osm(lat: float, lon: float, radius: int) -> str:
     """
     Query the Overpass API and return the raw OSM XML response.
+
+    Retries up to ``_MAX_RETRIES`` times on HTTP 429 (Too Many Requests),
+    honouring the ``Retry-After`` response header when present and falling
+    back to exponential backoff (``_BACKOFF_BASE * 2^attempt`` seconds).
 
     Parameters
     ----------
@@ -56,14 +65,38 @@ def download_osm(lat: float, lon: float, radius: int) -> str:
     Raises
     ------
     requests.HTTPError
-        If the Overpass API returns a non-2xx status code.
+        If the Overpass API returns a non-2xx status code after all retries
+        are exhausted (or immediately for non-429 errors).
     """
     query = build_query(lat, lon, radius)
     print(f"Querying Overpass API (lat={lat}, lon={lon}, radius={radius}m)...")
-    response = requests.post(OVERPASS_URL, data={"data": query}, timeout=120)
-    response.raise_for_status()
-    print(f"Received {len(response.content):,} bytes from Overpass API.")
-    return response.text
+
+    for attempt in range(_MAX_RETRIES + 1):
+        response = requests.post(OVERPASS_URL, data={"data": query}, timeout=120)
+
+        if response.status_code == 429:
+            if attempt == _MAX_RETRIES:
+                response.raise_for_status()
+
+            retry_after = response.headers.get("Retry-After")
+            if retry_after is not None:
+                try:
+                    delay = float(retry_after)
+                except ValueError:
+                    delay = _BACKOFF_BASE * (2 ** attempt)
+            else:
+                delay = _BACKOFF_BASE * (2 ** attempt)
+
+            print(
+                f"Rate limited (429). Retrying in {delay:.0f}s "
+                f"(attempt {attempt + 1}/{_MAX_RETRIES})..."
+            )
+            time.sleep(delay)
+            continue
+
+        response.raise_for_status()
+        print(f"Received {len(response.content):,} bytes from Overpass API.")
+        return response.text
 
 
 def save_osm(content: str, output_path: str) -> None:
