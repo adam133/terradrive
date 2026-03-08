@@ -129,29 +129,46 @@ You can also trigger the same setup interactively at any time from the Unity men
 
 ---
 
-## Step 4 — Create the Proof-of-Concept Scene
+## Step 4 — Open the Proof-of-Concept Scene
 
-There is no pre-built scene included in the repository yet, so you need to assemble one
-manually. This only takes a few minutes.
+A pre-built scene is included at `Assets/Scenes/ProofOfConcept.unity`.  Open it in Unity:
 
-### 4a. Create a new scene
+**File → Open Scene → Assets/Scenes/ProofOfConcept.unity**
 
-**File → New Scene → Basic (Built-in)** (or URP/HDRP equivalent).
-Save it as `Assets/Scenes/ProofOfConcept.unity`.
+The scene contains:
+- **Directional Light** — a sun-like light angled at (50°, −30°, 0°).
+- **GameManager** — the singleton state machine, defaulting to `MainMenu` state and centred on London (51.5074, −0.1278).
+- **MaterialRegistry** — pre-populated with all 25 texture-ID slots (road surfaces, kerbs, building walls, building roofs).  Each slot is empty by default; drag your Unity `Material` assets into the Inspector to wire them up (see §4a below).
 
-### 4b. Add the GameManager
+You still need to add a ground plane, vehicle, and camera manually (§4b–4e).
 
-1. Create an empty GameObject: **GameObject → Create Empty**. Name it `GameManager`.
-2. In the Inspector click **Add Component** and search for `GameManager`.
-3. Set **Origin Latitude** / **Origin Longitude** to the centre coordinate you used when
-   downloading the `.osm` file (e.g. `51.5074` / `-0.1278` for London).
+### 4a. Assign materials to the MaterialRegistry
 
-### 4c. Add a flat ground plane
+1. Select the **MaterialRegistry** GameObject in the Hierarchy.
+2. In the Inspector, expand **Entries**.  You will see 25 rows, one per texture ID:
+
+   | Texture ID | What it covers |
+   |---|---|
+   | `road_asphalt` | Default (unknown region) road surface |
+   | `road_asphalt_temperate` … `road_asphalt_steppe` | Paved roads per climate region |
+   | `road_dirt`, `road_sand`, `road_mud`, `road_gravel_boreal`, `road_gravel_arctic` | Unpaved road surfaces |
+   | `kerb_stone`, `kerb_concrete`, `kerb_granite` | Kerb/curb strips |
+   | `building_wall_brick` … `building_wall_concrete` | Building wall surfaces |
+   | `building_roof_slate` … `building_roof_flat` | Building roof surfaces |
+
+3. Drag a Unity `Material` asset into the **Material** field of each row.  Rows left empty
+   are silently skipped by `MaterialRegistry.ApplyTo`; the mesh will render with Unity's
+   default magenta error material until a material is assigned.
+
+> **Tip:** Start with a small set — assign one asphalt material to all road rows and one
+> brick material to all building rows.  You can refine region-specific materials later.
+
+### 4b. Add a flat ground plane
 
 **GameObject → 3D Object → Plane**. Scale it to `(100, 1, 100)` so the car has somewhere
 to drive while the procedural road mesh is not yet connected.
 
-### 4d. Create a vehicle
+### 4c. Create a vehicle
 
 1. Create an empty GameObject named `Car`.
 2. Add a **Rigidbody** component (mass ≈ 1500 kg).
@@ -170,9 +187,8 @@ to drive while the procedural road mesh is not yet connected.
 2. Add the **ChaseCam** component.
 3. Drag the `Car` GameObject from the Hierarchy into the **Target** field.
 
-### 4f. Add a light
-
-**GameObject → Light → Directional Light** if one is not already present.
+> The scene already contains a **Directional Light** — no need to add one unless you deleted
+> it or are starting from a different base scene.
 
 ---
 
@@ -247,6 +263,7 @@ Run the produced binary to play the game outside the editor.
 | Game state machine | ✅ Working |
 | CLI project create + configure (batch mode) | ✅ Working — `ProjectSetup.Configure` via `-executeMethod` |
 | Automated release builds (CI/CD) | ✅ Working — push to `release` branch triggers `release.yml` |
+| Texture ID → Material wiring | ✅ Working — `MaterialRegistry` scene component + `ProofOfConcept.unity` with all 25 texture slots |
 | Prefab selection per region kit | 🔲 Planned |
 | Race logic, checkpoints, HUD | 🔲 Planned |
 | AI opponents | 🔲 Planned |
