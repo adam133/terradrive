@@ -43,14 +43,14 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 
 ## Phased Implementation Plan
 
-### Phase 1 — Data Scraper (Python / C#) ✅
+### Phase 1 — Data Scraper (C#) ✅
 
 **Goal:** Given a GPS coordinate, produce a clean `.osm` file of nearby roads and elevation data.
 
 - [x] Use the [Overpass API](https://overpass-api.de/) to download road data within a configurable radius (default 5 km).
 - [x] Save `.osm` files to a local project folder for offline / editor use.
 - [ ] Optionally bundle elevation/DEM data alongside the `.osm` download.
-- See [`Tools/osm_downloader.py`](Tools/osm_downloader.py) and [`Tools/README.md`](Tools/README.md).
+- See [`Tools/OsmDownloader/`](Tools/OsmDownloader/) and [`Tools/README.md`](Tools/README.md).
 
 ### Phase 2 — Spline Generator ✅
 
@@ -83,10 +83,12 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 - [x] Extrude building footprints into 3D wall and roof meshes with deterministic randomised heights.
 - [x] Read the `country` or `addr:country` tag from OSM nodes to detect region/biome.
 - [x] Scatter roadside props (signs, lamp posts, fences) along road splines.
+- [x] Select region-appropriate texture IDs for road and building meshes (`RegionTextures`).
 - [ ] Select prefabs from the matching regional kit folder (`European_Kit`, `Asian_Kit`, etc.).
-- [ ] Apply region-appropriate textures to generated road and building meshes.
+- [ ] Wire texture IDs to Unity material assets in the scene.
 - See [`Assets/Scripts/Procedural/BuildingGenerator.cs`](Assets/Scripts/Procedural/BuildingGenerator.cs),
-  [`Assets/Scripts/Procedural/RoadsidePropPlacer.cs`](Assets/Scripts/Procedural/RoadsidePropPlacer.cs), and
+  [`Assets/Scripts/Procedural/RoadsidePropPlacer.cs`](Assets/Scripts/Procedural/RoadsidePropPlacer.cs),
+  [`Assets/Scripts/Procedural/RegionTextures.cs`](Assets/Scripts/Procedural/RegionTextures.cs), and
   [`Assets/Scripts/DataInversion/OSMParser.cs`](Assets/Scripts/DataInversion/OSMParser.cs).
 
 ### Phase 5 — Game State & Manager ✅
@@ -168,9 +170,12 @@ They cover the following modules:
 | `RegionTypeTests.cs` | `RegionType`, `OSMParser.DetectRegion` |
 | `RoadMeshExtruderTests.cs` | `RoadMeshExtruder`, `RoadMeshResult` |
 | `BridgeElevatorTests.cs` | `BridgeElevator` |
+| `BuildingGeneratorTests.cs` | `BuildingGenerator`, `BuildingMeshResult` |
+| `RoadSurfaceDeformerTests.cs` | `RoadSurfaceDeformer` |
 | `RoadsidePropPlacerTests.cs` | `RoadsidePropPlacer`, `PropPlacement`, `PropType` |
 | `OpenElevationSourceTests.cs` | `OpenElevationSource`, `IElevationSource` |
 | `TerrainMeshGeneratorTests.cs` | `ElevationGrid`, `TerrainMeshGenerator`, `TerrainMeshResult` |
+| `OsmDownloaderTests.cs` | `OsmDownloader` |
 | `ChaseCamIntegrationTests.cs` | `ChaseCam` (integration, renders `chase-cam-preview.png`) |
 | `MapRendererIntegrationTests.cs` | `OSMParser` + `SplineGenerator` (integration, renders `map-preview.png`) |
 
@@ -191,9 +196,7 @@ a standalone executable — see **[GETTING_STARTED.md](GETTING_STARTED.md)**.
 #### Prerequisites
 
 - Unity 6.3 LTS or later (URP or HDRP recommended)
-- Python 3.14+ (for the OSM downloader tool)
-- `requests` Python package (`pip install requests`)
-- .NET 8 SDK (for running unit tests outside Unity)
+- .NET 8 SDK (for running unit tests and the OSM downloader tool outside Unity)
 
 #### Verify the pipeline (no Unity needed)
 
@@ -204,8 +207,7 @@ dotnet test Tests/TerraDrive.Tests/TerraDrive.Tests.csproj
 #### Download Map Data
 
 ```bash
-cd Tools
-python osm_downloader.py --lat 51.5074 --lon -0.1278 --radius 5000 --output ../Assets/Data/london.osm
+dotnet run --project Tools/OsmDownloader -- --lat 51.5074 --lon -0.1278 --radius 5000 --output Assets/Data/london.osm
 ```
 
 #### Open in Unity

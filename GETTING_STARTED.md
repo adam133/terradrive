@@ -11,14 +11,7 @@ playable standalone executable.
 | Tool | Version | Purpose |
 |---|---|---|
 | [Unity Hub](https://unity.com/download) + **Unity 6.3 LTS** | 6000.3.x | Game engine (required to build and play) |
-| [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8) | 8.0+ | Run unit/integration tests outside Unity |
-| [Python](https://www.python.org/downloads/) | 3.14+ | OSM map downloader script |
-| `requests` Python package | latest | Used by `osm_downloader.py` |
-
-```bash
-# Install the Python dependency
-pip install requests
-```
+| [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8) | 8.0+ | Run unit/integration tests and the OSM downloader outside Unity |
 
 ---
 
@@ -57,15 +50,13 @@ A successful run confirms:
 Use the bundled Overpass API downloader to fetch road and building data for any location:
 
 ```bash
-cd Tools
-
 # Central London (5 km radius — good first test)
-python osm_downloader.py --lat 51.5074 --lon -0.1278 --radius 5000 \
-    --output ../Assets/Data/london.osm
+dotnet run --project Tools/OsmDownloader -- --lat 51.5074 --lon -0.1278 --radius 5000 \
+    --output Assets/Data/london.osm
 
 # Smaller area — faster to generate, ideal for a first run
-python osm_downloader.py --lat 51.5074 --lon -0.1278 --radius 1000 \
-    --output ../Assets/Data/london_small.osm
+dotnet run --project Tools/OsmDownloader -- --lat 51.5074 --lon -0.1278 --radius 1000 \
+    --output Assets/Data/london_small.osm
 ```
 
 The `.osm` file is saved to `Assets/Data/` and is read by `OSMParser` at runtime.
