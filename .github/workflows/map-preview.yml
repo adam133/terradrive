@@ -21,20 +21,10 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install Python dependencies
-        run: pip install requests pytest
-
-      - name: Run osm_downloader tests
-        run: pytest Tools/test_osm_downloader.py -v
-
       - name: Download OSM map data (downtown Des Moines, IA)
         run: >
-          python Tools/osm_downloader.py
+          dotnet run --project Tools/OsmDownloader
+          --
           --lat 41.587881
           --lon -93.620142
           --radius 5000
