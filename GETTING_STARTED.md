@@ -73,7 +73,9 @@ See [`Tools/README.md`](Tools/README.md) for the full argument reference.
 
 ---
 
-## Step 3 — Open the Project in Unity
+## Step 3 — Open / Create the Project in Unity
+
+### Option A — Unity Hub (recommended for development)
 
 1. **Install Unity 6.3 LTS** via [Unity Hub](https://unity.com/download).
    When prompted, include the **Windows/Mac/Linux Standalone Build Support** module for
@@ -83,6 +85,56 @@ See [`Tools/README.md`](Tools/README.md) for the full argument reference.
    repository (the folder that contains `Assets/`, `Tools/`, and `Tests/`).
 
 3. Unity will import all assets. This may take a few minutes on first open.
+
+### Option B — Command-line / headless (batch mode)
+
+If you prefer to bootstrap the project without opening the Unity Editor UI (e.g. on a
+CI server or a headless machine), use Unity's batch-mode flags:
+
+```bat
+:: Windows — create / import the project
+"C:\Program Files\Unity\Hub\Editor\6000.3.x\Editor\Unity.exe" ^
+    -batchmode -quit ^
+    -createProject "C:\path\to\terradrive"
+```
+
+```bash
+# macOS / Linux — create / import the project
+/Applications/Unity/Hub/Editor/6000.3.x/Unity.app/Contents/MacOS/Unity \
+    -batchmode -quit \
+    -projectPath "/path/to/terradrive" \
+    -createProject "/path/to/terradrive"
+```
+
+Once the project has been imported, apply the standard TerraDrive project settings
+(gravity = -9.81, Road and Terrain layers) by executing the bundled setup script:
+
+```bat
+:: Windows
+"C:\Program Files\Unity\Hub\Editor\6000.3.x\Editor\Unity.exe" ^
+    -batchmode -quit ^
+    -projectPath "C:\path\to\terradrive" ^
+    -executeMethod TerraDrive.Editor.ProjectSetup.Configure
+```
+
+```bash
+# macOS / Linux
+/Applications/Unity/Hub/Editor/6000.3.x/Unity.app/Contents/MacOS/Unity \
+    -batchmode -quit \
+    -projectPath "/path/to/terradrive" \
+    -executeMethod TerraDrive.Editor.ProjectSetup.Configure
+```
+
+The script configures the following defaults:
+
+| Setting | Value |
+|---|---|
+| Physics gravity | `(0, -9.81, 0)` m/s² |
+| User layer 8 | `Terrain` |
+| User layer 9 | `Road` |
+
+You can also trigger the same setup interactively at any time from the Unity menu bar:
+**TerraDrive → Configure Project**.
 
 ---
 
@@ -184,6 +236,8 @@ Run the produced binary to play the game outside the editor.
 | Car spins on the spot | WheelCollider radii too small | Increase the **Radius** on each WheelCollider to match the visual wheel |
 | Camera stutters | `positionDamping` too high | Lower **Position Damping** on the ChaseCam component (try `3`) |
 | No `WheelCollider` in Add Component list | Wrong Unity version | Ensure Unity 6.3 LTS is installed (WheelCollider is a built-in Physics component) |
+| Batch-mode setup exits with code 1 | Editor script exception | Check the Unity `Editor.log` for the `[ProjectSetup]` error line |
+| `release.yml` build fails with license error | Unity secrets not configured | See [game-ci docs](https://game.ci/docs/github/activation) to generate and upload `UNITY_LICENSE` |
 
 ---
 
@@ -200,6 +254,8 @@ Run the produced binary to play the game outside the editor.
 | Elevation (DEM) integration | ✅ Working — `ElevationGrid.SampleAsync` + `TerrainMeshGenerator.Generate` + `OSMParser.ParseAsync` |
 | Car physics + chase camera | ✅ Working |
 | Game state machine | ✅ Working |
+| CLI project create + configure (batch mode) | ✅ Working — `ProjectSetup.Configure` via `-executeMethod` |
+| Automated release builds (CI/CD) | ✅ Working — push to `release` branch triggers `release.yml` |
 | Prefab selection per region kit | 🔲 Planned |
 | Race logic, checkpoints, HUD | 🔲 Planned |
 | AI opponents | 🔲 Planned |

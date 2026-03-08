@@ -30,6 +30,7 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
     /Scripts
       /Core          ← Game managers, state machines, coordinate helpers
       /DataInversion ← OSM / DEM parsing logic
+      /Editor        ← Unity Editor-only scripts (ProjectSetup, batch-mode helpers)
       /Procedural    ← Mesh generation (Roads, Buildings, Props)
       /Terrain       ← Elevation data sources (IElevationSource, OpenElevationSource)
       /Vehicle       ← Physics, controls, and chase camera
@@ -137,6 +138,19 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 - [ ] Add a results / podium screen wired to the `GameManager.Results` state.
 - [ ] Implement AI opponent vehicles that follow the road spline.
 
+### Phase 9 — CLI Project Setup & CI/CD Releases ✅
+
+**Goal:** Allow the Unity project to be created and configured entirely from the command line, and automate release builds via GitHub Actions.
+
+- [x] Implement `ProjectSetup.Configure` Editor script callable in batch mode via
+      `-executeMethod TerraDrive.Editor.ProjectSetup.Configure`.
+- [x] Set physics gravity to `(0, -9.81, 0)` and register `Terrain` + `Road` user layers.
+- [x] Expose the same configuration as a **TerraDrive → Configure Project** menu item.
+- [x] Add `release.yml` GitHub Actions workflow — push to the `release` branch runs tests,
+      builds for Windows/macOS/Linux via `game-ci/unity-builder`, and publishes a GitHub Release.
+- See [`Assets/Scripts/Editor/ProjectSetup.cs`](Assets/Scripts/Editor/ProjectSetup.cs) and
+  [`.github/workflows/release.yml`](.github/workflows/release.yml).
+
 ---
 
 ## Testing
@@ -201,6 +215,114 @@ python osm_downloader.py --lat 51.5074 --lon -0.1278 --radius 5000 --output ../A
    on the main camera (see [GETTING_STARTED.md](GETTING_STARTED.md) for full scene setup).
 3. Press **▶ Play** to drive, or use **File → Build Settings → Build** to export a
    standalone executable.
+
+---
+
+## CLI — Create & Configure the Unity Project
+
+TerraDrive ships an Editor script ([`Assets/Scripts/Editor/ProjectSetup.cs`](Assets/Scripts/Editor/ProjectSetup.cs))
+that can be run from the command line in Unity's **batch mode** to create the project and
+apply the standard project settings (gravity, layers) without opening the Unity Editor UI.
+
+### Step 1 — Create the project
+
+If you are bootstrapping from a fresh clone (no `Library/` folder yet), Unity must first
+import the project. Pass `-createProject` to force it to generate all project metadata:
+
+```bat
+:: Windows — adjust the path to your installed Unity version
+"C:\Program Files\Unity\Hub\Editor\6000.3.x\Editor\Unity.exe" ^
+    -batchmode -quit ^
+    -createProject "C:\path\to\terradrive"
+```
+
+```bash
+# macOS / Linux
+/Applications/Unity/Hub/Editor/6000.3.x/Unity.app/Contents/MacOS/Unity \
+    -batchmode -quit \
+    -projectPath "/path/to/terradrive" \
+    -createProject "/path/to/terradrive"
+```
+
+### Step 2 — Apply project defaults
+
+Once the project has been imported, run the `ProjectSetup.Configure` method to apply the
+standard TerraDrive settings:
+
+| Setting | Value |
+|---|---|
+| Physics gravity | `(0, -9.81, 0)` m/s² |
+| User layer 8 | `Terrain` |
+| User layer 9 | `Road` |
+
+```bat
+:: Windows
+"C:\Program Files\Unity\Hub\Editor\6000.3.x\Editor\Unity.exe" ^
+    -batchmode -quit ^
+    -projectPath "C:\path\to\terradrive" ^
+    -executeMethod TerraDrive.Editor.ProjectSetup.Configure
+```
+
+```bash
+# macOS / Linux
+/Applications/Unity/Hub/Editor/6000.3.x/Unity.app/Contents/MacOS/Unity \
+    -batchmode -quit \
+    -projectPath "/path/to/terradrive" \
+    -executeMethod TerraDrive.Editor.ProjectSetup.Configure
+```
+
+You can also run the same configuration interactively from the Unity menu bar:
+**TerraDrive → Configure Project**.
+
+---
+
+## CI/CD — Automated Builds & Releases
+
+The repository ships two GitHub Actions workflows.
+
+| Workflow | Trigger | What it does |
+|---|---|---|
+| [`tests.yml`](.github/workflows/tests.yml) | Every push / PR to `main` | Runs the .NET unit tests |
+| [`release.yml`](.github/workflows/release.yml) | Push to `release` branch | Runs tests → builds for Windows, macOS, Linux → publishes a GitHub Release |
+
+### Publishing a release
+
+1. Merge your changes into the `release` branch (or push directly):
+
+   ```bash
+   git checkout release
+   git merge main          # or cherry-pick the commits you want
+   git push origin release
+   ```
+
+   Optionally tag the commit first so the release gets a human-readable version number:
+
+   ```bash
+   git tag v2025.06.01
+   git push origin v2025.06.01
+   git push origin release
+   ```
+
+2. The `release.yml` workflow will:
+   - Determine the version from the tag (or fall back to `YYYY.MM.DD-<short SHA>`).
+   - Run the .NET unit-test suite.
+   - Build the project for **Windows 64-bit**, **macOS**, and **Linux 64-bit** via
+     [`game-ci/unity-builder`](https://game.ci/).
+   - Upload each platform zip as a workflow artifact.
+   - Create a GitHub Release named `TerraDrive vX.Y.Z` with all three zips attached.
+
+### Required secrets
+
+Set the following repository secrets (**Settings → Secrets and variables → Actions**):
+
+| Secret | Description |
+|---|---|
+| `UNITY_LICENSE` | Contents of a valid Unity `.ulf` license file |
+| `UNITY_EMAIL` | Unity account e-mail address |
+| `UNITY_PASSWORD` | Unity account password |
+
+See the [game-ci documentation](https://game.ci/docs/github/activation) for how to obtain
+and encode the Unity license file.
 
 ---
 
