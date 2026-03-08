@@ -31,9 +31,10 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
       /Core          ← Game managers, state machines, coordinate helpers
       /DataInversion ← OSM / DEM parsing logic
       /Editor        ← Unity Editor-only scripts (ProjectSetup, batch-mode helpers)
+      /Hud           ← Minimap renderer and HUD utilities
       /Procedural    ← Mesh generation (Roads, Buildings, Props)
       /Terrain       ← Elevation data sources (IElevationSource, OpenElevationSource)
-      /Vehicle       ← Physics, controls, and chase camera
+      /Vehicle       ← Physics, controls, chase camera, and speedometer
     /Prefabs         ← Asset kits (Signs, Houses, Foliage)
     /Shaders         ← World-mapping and road textures
   /Tools             ← Editor scripts for map downloading
@@ -131,15 +132,19 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
   [`Assets/Scripts/Terrain/ElevationGrid.cs`](Assets/Scripts/Terrain/ElevationGrid.cs), and
   [`Assets/Scripts/Terrain/TerrainMeshGenerator.cs`](Assets/Scripts/Terrain/TerrainMeshGenerator.cs).
 
-### Phase 8 — Race Logic & HUD 🔲 Planned
+### Phase 8 — Race Logic & HUD ⚠️ In Progress
 
 **Goal:** Turn the open-world drive into a timed race with checkpoints, lap counting, and a results screen.
 
+- [x] Implement `SpeedometerHud` — reads vehicle `Rigidbody` speed and exposes `SpeedMph` for HUD display.
+- [x] Implement `MinimapRenderer` — converts road segments to normalised [0, 1] minimap lines with configurable radius and optional player-yaw rotation.
+- [ ] Build in-scene HUD overlay (canvas with speedometer readout, lap timer, position counter, minimap).
 - [ ] Define race checkpoints along the generated road splines.
 - [ ] Implement lap timing and best-lap tracking.
-- [ ] Build a HUD (speedometer, lap timer, position, minimap).
 - [ ] Add a results / podium screen wired to the `GameManager.Results` state.
 - [ ] Implement AI opponent vehicles that follow the road spline.
+- See [`Assets/Scripts/Vehicle/SpeedometerHud.cs`](Assets/Scripts/Vehicle/SpeedometerHud.cs) and
+  [`Assets/Scripts/Hud/MinimapRenderer.cs`](Assets/Scripts/Hud/MinimapRenderer.cs).
 
 ### Phase 9 — CLI Project Setup & CI/CD Releases ✅
 
@@ -178,6 +183,9 @@ They cover the following modules:
 | `TerrainMeshGeneratorTests.cs` | `ElevationGrid`, `ElevationGrid.SampleElevation`, `ElevationGrid` as `IElevationSource`, `TerrainMeshGenerator`, `TerrainMeshResult` |
 | `OsmDownloaderTests.cs` | `OsmDownloader` (including elevation grid download, save, and load) |
 | `MapLoaderTests.cs` | `MapLoader`, `MapData` (end-to-end load from `.osm` + `.elevation.csv` → roads, buildings, terrain mesh) |
+| `MaterialRegistryTests.cs` | `MaterialRegistry` |
+| `SpeedometerTests.cs` | `Speedometer`, `SpeedometerHud` |
+| `MinimapRendererTests.cs` | `MinimapRenderer`, `MinimapLine` |
 | `ChaseCamIntegrationTests.cs` | `ChaseCam` (integration, renders `chase-cam-preview.png`) |
 | `MapRendererIntegrationTests.cs` | `OSMParser` + `SplineGenerator` (integration, renders `map-preview.png`) |
 
