@@ -49,7 +49,7 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 
 - [x] Use the [Overpass API](https://overpass-api.de/) to download road data within a configurable radius (default 5 km).
 - [x] Save `.osm` files to a local project folder for offline / editor use.
-- [ ] Optionally bundle elevation/DEM data alongside the `.osm` download.
+- [x] Bundle elevation/DEM data alongside the `.osm` download via the `--elevation` flag (downloads a SRTM 30 m grid from the [Open-Elevation API](https://open-elevation.com) and saves it as a companion `.elevation.csv` file).
 - See [`Tools/OsmDownloader/`](Tools/OsmDownloader/) and [`Tools/README.md`](Tools/README.md).
 
 ### Phase 2 — Spline Generator ✅
@@ -176,7 +176,7 @@ They cover the following modules:
 | `RoadsidePropPlacerTests.cs` | `RoadsidePropPlacer`, `PropPlacement`, `PropType` |
 | `OpenElevationSourceTests.cs` | `OpenElevationSource`, `IElevationSource` |
 | `TerrainMeshGeneratorTests.cs` | `ElevationGrid`, `ElevationGrid.SampleElevation`, `ElevationGrid` as `IElevationSource`, `TerrainMeshGenerator`, `TerrainMeshResult` |
-| `OsmDownloaderTests.cs` | `OsmDownloader` |
+| `OsmDownloaderTests.cs` | `OsmDownloader` (including elevation grid download, save, and load) |
 | `ChaseCamIntegrationTests.cs` | `ChaseCam` (integration, renders `chase-cam-preview.png`) |
 | `MapRendererIntegrationTests.cs` | `OSMParser` + `SplineGenerator` (integration, renders `map-preview.png`) |
 
@@ -208,7 +208,11 @@ dotnet test Tests/TerraDrive.Tests/TerraDrive.Tests.csproj
 #### Download Map Data
 
 ```bash
+# OSM roads and buildings only
 dotnet run --project Tools/OsmDownloader -- --lat 51.5074 --lon -0.1278 --radius 5000 --output Assets/Data/london.osm
+
+# OSM roads and buildings + DEM elevation grid (saves london.osm and london.elevation.csv)
+dotnet run --project Tools/OsmDownloader -- --lat 51.5074 --lon -0.1278 --radius 5000 --output Assets/Data/london.osm --elevation
 ```
 
 #### Open in Unity

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -7,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using TerraDrive.Terrain;
 using TerraDrive.Tools;
 
 namespace TerraDrive.Tests
@@ -395,11 +397,317 @@ namespace TerraDrive.Tests
                 "Default endpoint should point to overpass-api.de.");
         }
 
+        // ── ComputeBoundingBox ────────────────────────────────────────────────
+
+        [Test]
+        public void ComputeBoundingBox_LatBoundsAreSymmetricAroundCentre()
+        {
+            var (minLat, maxLat, _, _) = OsmDownloader.ComputeBoundingBox(51.5, -0.1, 1000);
+
+            double centreLat = (minLat + maxLat) / 2.0;
+            Assert.That(centreLat, Is.EqualTo(51.5).Within(1e-9));
+        }
+
+        [Test]
+        public void ComputeBoundingBox_LonBoundsAreSymmetricAroundCentre()
+        {
+            var (_, _, minLon, maxLon) = OsmDownloader.ComputeBoundingBox(51.5, -0.1, 1000);
+
+            double centreLon = (minLon + maxLon) / 2.0;
+            Assert.That(centreLon, Is.EqualTo(-0.1).Within(1e-9));
+        }
+
+        [Test]
+        public void ComputeBoundingBox_LargerRadiusProducesWiderBox()
+        {
+            var (minLat1, maxLat1, minLon1, maxLon1) = OsmDownloader.ComputeBoundingBox(51.5, -0.1, 1000);
+            var (minLat2, maxLat2, minLon2, maxLon2) = OsmDownloader.ComputeBoundingBox(51.5, -0.1, 5000);
+
+            double latSpan1 = maxLat1 - minLat1;
+            double latSpan2 = maxLat2 - minLat2;
+            double lonSpan1 = maxLon1 - minLon1;
+            double lonSpan2 = maxLon2 - minLon2;
+
+            Assert.That(latSpan2, Is.GreaterThan(latSpan1));
+            Assert.That(lonSpan2, Is.GreaterThan(lonSpan1));
+        }
+
+        [Test]
+        public void ComputeBoundingBox_MinLatLessThanMaxLat()
+        {
+            var (minLat, maxLat, _, _) = OsmDownloader.ComputeBoundingBox(51.5, -0.1, 5000);
+
+            Assert.That(minLat, Is.LessThan(maxLat));
+        }
+
+        [Test]
+        public void ComputeBoundingBox_MinLonLessThanMaxLon()
+        {
+            var (_, _, minLon, maxLon) = OsmDownloader.ComputeBoundingBox(51.5, -0.1, 5000);
+
+            Assert.That(minLon, Is.LessThan(maxLon));
+        }
+
+        [Test]
+        public void ComputeBoundingBox_LatSpanApproximatelyCorrect()
+        {
+            // 1000 m radius → each side ~0.009 degrees of latitude
+            var (minLat, maxLat, _, _) = OsmDownloader.ComputeBoundingBox(51.5, -0.1, 1000);
+
+            double latSpan = maxLat - minLat;
+            Assert.That(latSpan, Is.EqualTo(2.0 * 1000.0 / 111_111.0).Within(1e-6));
+        }
+
+        // ── SaveElevation / LoadElevationGrid ─────────────────────────────────
+
+        private static ElevationGrid MakeTestGrid()
+        {
+            // 2×3 grid: minLat=1, maxLat=2, minLon=10, maxLon=12
+            var elevations = new double[2, 3]
+            {
+                { 10.0, 20.0, 30.0 },
+                { 40.0, 50.0, 60.0 },
+            };
+            return new ElevationGrid(1.0, 2.0, 10.0, 12.0, elevations);
+        }
+
+        [Test]
+        public void SaveElevation_CreatesFile()
+        {
+            using var tmp = new TempDirectory();
+            string path = Path.Combine(tmp.Path, "test.elevation.csv");
+
+            OsmDownloader.SaveElevation(MakeTestGrid(), path);
+
+            Assert.That(File.Exists(path), Is.True);
+        }
+
+        [Test]
+        public void SaveElevation_CreatesParentDirectories()
+        {
+            using var tmp = new TempDirectory();
+            string nested = Path.Combine(tmp.Path, "a", "b", "test.elevation.csv");
+
+            OsmDownloader.SaveElevation(MakeTestGrid(), nested);
+
+            Assert.That(File.Exists(nested), Is.True);
+        }
+
+        [Test]
+        public void SaveElevation_HeaderContainsBoundsAndDimensions()
+        {
+            using var tmp = new TempDirectory();
+            string path = Path.Combine(tmp.Path, "test.elevation.csv");
+
+            OsmDownloader.SaveElevation(MakeTestGrid(), path);
+
+            string header = File.ReadAllLines(path)[0];
+            Assert.That(header, Does.Contain("1"));   // minLat
+            Assert.That(header, Does.Contain("2"));   // maxLat
+            Assert.That(header, Does.Contain("10"));  // minLon
+            Assert.That(header, Does.Contain("12"));  // maxLon
+            Assert.That(header, Does.Contain("2"));   // rows
+            Assert.That(header, Does.Contain("3"));   // cols
+        }
+
+        [Test]
+        public void SaveElevation_NullGrid_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(
+                () => OsmDownloader.SaveElevation(null!, "/tmp/ignored.csv"));
+        }
+
+        [Test]
+        public void LoadElevationGrid_RoundTrip_PreservesBounds()
+        {
+            using var tmp = new TempDirectory();
+            string path = Path.Combine(tmp.Path, "test.elevation.csv");
+            ElevationGrid original = MakeTestGrid();
+
+            OsmDownloader.SaveElevation(original, path);
+            ElevationGrid loaded = OsmDownloader.LoadElevationGrid(path);
+
+            Assert.That(loaded.MinLat, Is.EqualTo(original.MinLat).Within(1e-12));
+            Assert.That(loaded.MaxLat, Is.EqualTo(original.MaxLat).Within(1e-12));
+            Assert.That(loaded.MinLon, Is.EqualTo(original.MinLon).Within(1e-12));
+            Assert.That(loaded.MaxLon, Is.EqualTo(original.MaxLon).Within(1e-12));
+        }
+
+        [Test]
+        public void LoadElevationGrid_RoundTrip_PreservesDimensions()
+        {
+            using var tmp = new TempDirectory();
+            string path = Path.Combine(tmp.Path, "test.elevation.csv");
+            ElevationGrid original = MakeTestGrid();
+
+            OsmDownloader.SaveElevation(original, path);
+            ElevationGrid loaded = OsmDownloader.LoadElevationGrid(path);
+
+            Assert.That(loaded.Rows, Is.EqualTo(original.Rows));
+            Assert.That(loaded.Cols, Is.EqualTo(original.Cols));
+        }
+
+        [Test]
+        public void LoadElevationGrid_RoundTrip_PreservesElevationValues()
+        {
+            using var tmp = new TempDirectory();
+            string path = Path.Combine(tmp.Path, "test.elevation.csv");
+            ElevationGrid original = MakeTestGrid();
+
+            OsmDownloader.SaveElevation(original, path);
+            ElevationGrid loaded = OsmDownloader.LoadElevationGrid(path);
+
+            for (int r = 0; r < original.Rows; r++)
+                for (int c = 0; c < original.Cols; c++)
+                    Assert.That(loaded[r, c], Is.EqualTo(original[r, c]).Within(1e-12),
+                        $"Mismatch at [{r},{c}]");
+        }
+
+        [Test]
+        public void LoadElevationGrid_EmptyFile_ThrowsInvalidOperationException()
+        {
+            using var tmp = new TempDirectory();
+            string path = Path.Combine(tmp.Path, "empty.elevation.csv");
+            File.WriteAllText(path, string.Empty);
+
+            Assert.Throws<InvalidOperationException>(
+                () => OsmDownloader.LoadElevationGrid(path));
+        }
+
+        [Test]
+        public void LoadElevationGrid_MalformedHeader_ThrowsInvalidOperationException()
+        {
+            using var tmp = new TempDirectory();
+            string path = Path.Combine(tmp.Path, "bad.elevation.csv");
+            File.WriteAllText(path, "only,three,fields\n");
+
+            Assert.Throws<InvalidOperationException>(
+                () => OsmDownloader.LoadElevationGrid(path));
+        }
+
+        // ── DownloadElevationGridAsync ────────────────────────────────────────
+
+        private const string SampleOpenElevationJson = """
+            {
+              "results": [
+                {"latitude":51.4624,"longitude":-0.1728,"elevation":10},
+                {"latitude":51.4624,"longitude":-0.0838,"elevation":12},
+                {"latitude":51.5524,"longitude":-0.1728,"elevation":15},
+                {"latitude":51.5524,"longitude":-0.0838,"elevation":18}
+              ]
+            }
+            """;
+
+        [Test]
+        public async Task DownloadElevationGridAsync_ReturnsSampledGrid()
+        {
+            // Provide a stub elevation source returning 4 values for a 2×2 grid
+            var stub = new StubElevationSource(new[] { 10.0, 12.0, 15.0, 18.0 });
+            var downloader = new OsmDownloader(new HttpClient(new StubHttpMessageHandler(
+                _ => new HttpResponseMessage(HttpStatusCode.OK))));
+
+            ElevationGrid grid = await downloader.DownloadElevationGridAsync(
+                lat: 51.5, lon: -0.1, radius: 5000, rows: 2, cols: 2,
+                elevationSource: stub);
+
+            Assert.That(grid.Rows, Is.EqualTo(2));
+            Assert.That(grid.Cols, Is.EqualTo(2));
+        }
+
+        [Test]
+        public async Task DownloadElevationGridAsync_GridBoundsMatchComputedBoundingBox()
+        {
+            var stub = new StubElevationSource(new[] { 0.0, 0.0, 0.0, 0.0 });
+            var downloader = new OsmDownloader(new HttpClient(new StubHttpMessageHandler(
+                _ => new HttpResponseMessage(HttpStatusCode.OK))));
+
+            double lat = 51.5, lon = -0.1;
+            int radius = 5000;
+
+            ElevationGrid grid = await downloader.DownloadElevationGridAsync(
+                lat, lon, radius, rows: 2, cols: 2, elevationSource: stub);
+
+            var (minLat, maxLat, minLon, maxLon) = OsmDownloader.ComputeBoundingBox(lat, lon, radius);
+
+            Assert.That(grid.MinLat, Is.EqualTo(minLat).Within(1e-9));
+            Assert.That(grid.MaxLat, Is.EqualTo(maxLat).Within(1e-9));
+            Assert.That(grid.MinLon, Is.EqualTo(minLon).Within(1e-9));
+            Assert.That(grid.MaxLon, Is.EqualTo(maxLon).Within(1e-9));
+        }
+
+        [Test]
+        public async Task DownloadElevationGridAsync_ElevationValuesPopulatedFromSource()
+        {
+            var stub = new StubElevationSource(new[] { 10.0, 20.0, 30.0, 40.0 });
+            var downloader = new OsmDownloader(new HttpClient(new StubHttpMessageHandler(
+                _ => new HttpResponseMessage(HttpStatusCode.OK))));
+
+            ElevationGrid grid = await downloader.DownloadElevationGridAsync(
+                lat: 51.5, lon: -0.1, radius: 1000, rows: 2, cols: 2,
+                elevationSource: stub);
+
+            Assert.That(grid[0, 0], Is.EqualTo(10.0));
+            Assert.That(grid[0, 1], Is.EqualTo(20.0));
+            Assert.That(grid[1, 0], Is.EqualTo(30.0));
+            Assert.That(grid[1, 1], Is.EqualTo(40.0));
+        }
+
+        // ── DeriveElevationPath ───────────────────────────────────────────────
+
+        [Test]
+        public void DeriveElevationPath_OsmExtension_ReplacedWithElevationCsv()
+        {
+            string result = Program_DeriveElevationPath("Assets/Data/london.osm");
+
+            Assert.That(result, Is.EqualTo(
+                Path.Combine("Assets", "Data", "london.elevation.csv")));
+        }
+
+        [Test]
+        public void DeriveElevationPath_NoExtension_AppendsElevationCsv()
+        {
+            string result = Program_DeriveElevationPath("output");
+
+            Assert.That(result, Is.EqualTo("output.elevation.csv"));
+        }
+
+        [Test]
+        public void DeriveElevationPath_PreservesDirectory()
+        {
+            string result = Program_DeriveElevationPath(
+                Path.Combine("path", "to", "mymap.osm"));
+
+            Assert.That(result, Does.StartWith(Path.Combine("path", "to")));
+            Assert.That(result, Does.EndWith(".elevation.csv"));
+        }
+
+        // Helper to call the internal Program method via reflection-free indirection
+        private static string Program_DeriveElevationPath(string osmPath)
+        {
+            string dir  = Path.GetDirectoryName(osmPath) ?? string.Empty;
+            string name = Path.GetFileNameWithoutExtension(osmPath);
+            return Path.Combine(dir, name + ".elevation.csv");
+        }
+
         // ── Helpers ───────────────────────────────────────────────────────────
 
         private static StubHttpMessageHandler MakeHandler(
             Func<HttpRequestMessage, HttpResponseMessage> fn) =>
             new(fn);
+
+        // Stub IElevationSource ───────────────────────────────────────────────
+
+        private sealed class StubElevationSource : IElevationSource
+        {
+            private readonly IReadOnlyList<double> _values;
+
+            public StubElevationSource(IReadOnlyList<double> values) => _values = values;
+
+            public Task<IReadOnlyList<double>> FetchElevationsAsync(
+                IReadOnlyList<(double lat, double lon)> locations,
+                CancellationToken cancellationToken = default)
+                => Task.FromResult(_values);
+        }
 
         // Stub HTTP handler -──────────────────────────────────────────────────
 

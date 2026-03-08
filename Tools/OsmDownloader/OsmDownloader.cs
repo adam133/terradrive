@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TerraDrive.Terrain;
 
 namespace TerraDrive.Tools
 {
@@ -178,6 +179,177 @@ namespace TerraDrive.Tools
 
             File.WriteAllText(outputPath, content, Encoding.UTF8);
             Console.WriteLine($"Saved OSM data to: {outputPath}");
+        }
+
+        // ── Elevation / DEM ───────────────────────────────────────────────────
+
+        /// <summary>
+        /// Computes the geographic bounding box of a circle with the given centre
+        /// coordinate and radius, suitable for passing to
+        /// <see cref="DownloadElevationGridAsync"/>.
+        /// </summary>
+        /// <param name="lat">Centre latitude in decimal degrees (WGS-84).</param>
+        /// <param name="lon">Centre longitude in decimal degrees (WGS-84).</param>
+        /// <param name="radius">Radius in metres.</param>
+        /// <returns>
+        /// A tuple <c>(minLat, maxLat, minLon, maxLon)</c> that encloses the circle.
+        /// </returns>
+        public static (double minLat, double maxLat, double minLon, double maxLon)
+            ComputeBoundingBox(double lat, double lon, int radius)
+        {
+            const double MetresPerDegree = 111_111.0;
+            double deltaLat = radius / MetresPerDegree;
+            double deltaLon = radius / (MetresPerDegree * Math.Cos(lat * Math.PI / 180.0));
+            return (lat - deltaLat, lat + deltaLat, lon - deltaLon, lon + deltaLon);
+        }
+
+        /// <summary>
+        /// Downloads a regular elevation grid for the bounding box that encloses the
+        /// given centre coordinate and radius, using the Open-Elevation API (SRTM 30 m
+        /// data) by default.
+        ///
+        /// <para><strong>Usage (programmatic)</strong></para>
+        /// <code>
+        ///   var downloader = new OsmDownloader();
+        ///   ElevationGrid grid = await downloader.DownloadElevationGridAsync(
+        ///       lat: 51.5074, lon: -0.1278, radius: 5000);
+        ///   OsmDownloader.SaveElevation(grid, "Assets/Data/london.elevation.csv");
+        /// </code>
+        /// </summary>
+        /// <param name="lat">Centre latitude in decimal degrees (WGS-84).</param>
+        /// <param name="lon">Centre longitude in decimal degrees (WGS-84).</param>
+        /// <param name="radius">Search radius in metres (must match the OSM download radius).</param>
+        /// <param name="rows">Number of latitude samples in the grid (default: 32).</param>
+        /// <param name="cols">Number of longitude samples in the grid (default: 32).</param>
+        /// <param name="elevationSource">
+        /// Optional elevation data source. When <c>null</c> (the default), a new
+        /// <see cref="OpenElevationSource"/> backed by the downloader's
+        /// <see cref="HttpClient"/> is used.
+        /// </param>
+        /// <param name="cancellationToken">Optional cancellation token.</param>
+        /// <returns>
+        /// An <see cref="ElevationGrid"/> populated with SRTM elevation values for the
+        /// bounding box that encloses the given coordinate and radius.
+        /// </returns>
+        public async Task<ElevationGrid> DownloadElevationGridAsync(
+            double lat,
+            double lon,
+            int radius,
+            int rows = 32,
+            int cols = 32,
+            IElevationSource? elevationSource = null,
+            CancellationToken cancellationToken = default)
+        {
+            var source = elevationSource ?? new OpenElevationSource(_httpClient);
+            var (minLat, maxLat, minLon, maxLon) = ComputeBoundingBox(lat, lon, radius);
+
+            Console.WriteLine(
+                $"Downloading elevation grid ({rows}×{cols}) for bounding box " +
+                $"[{minLat:F4},{maxLat:F4}] × [{minLon:F4},{maxLon:F4}]...");
+
+            ElevationGrid grid = await ElevationGrid.SampleAsync(
+                minLat, maxLat, minLon, maxLon, rows, cols, source, cancellationToken)
+                .ConfigureAwait(false);
+
+            Console.WriteLine($"Downloaded {rows * cols} elevation samples.");
+            return grid;
+        }
+
+        /// <summary>
+        /// Saves an <see cref="ElevationGrid"/> to a CSV file alongside an
+        /// <c>.osm</c> download.
+        ///
+        /// <para>
+        /// Format — line 1 is a header containing six comma-separated fields:
+        /// <c>minLat,maxLat,minLon,maxLon,rows,cols</c>.  The following
+        /// <c>rows</c> lines each contain <c>cols</c> comma-separated elevation
+        /// values in metres (row 0 = southern edge, last row = northern edge).
+        /// </para>
+        /// </summary>
+        /// <param name="grid">Elevation grid to serialise.</param>
+        /// <param name="outputPath">Destination file path (directories are created automatically).</param>
+        public static void SaveElevation(ElevationGrid grid, string outputPath)
+        {
+            if (grid == null) throw new ArgumentNullException(nameof(grid));
+
+            string? parent = Path.GetDirectoryName(Path.GetFullPath(outputPath));
+            if (parent != null)
+                Directory.CreateDirectory(parent);
+
+            var sb = new StringBuilder();
+
+            // Header: bounds and grid dimensions
+            sb.AppendLine(string.Join(",",
+                grid.MinLat.ToString("R", CultureInfo.InvariantCulture),
+                grid.MaxLat.ToString("R", CultureInfo.InvariantCulture),
+                grid.MinLon.ToString("R", CultureInfo.InvariantCulture),
+                grid.MaxLon.ToString("R", CultureInfo.InvariantCulture),
+                grid.Rows.ToString(CultureInfo.InvariantCulture),
+                grid.Cols.ToString(CultureInfo.InvariantCulture)));
+
+            // Elevation rows (south → north)
+            for (int r = 0; r < grid.Rows; r++)
+            {
+                var values = new string[grid.Cols];
+                for (int c = 0; c < grid.Cols; c++)
+                    values[c] = grid[r, c].ToString("R", CultureInfo.InvariantCulture);
+                sb.AppendLine(string.Join(",", values));
+            }
+
+            File.WriteAllText(outputPath, sb.ToString(), Encoding.UTF8);
+            Console.WriteLine($"Saved elevation data to: {outputPath}");
+        }
+
+        /// <summary>
+        /// Loads an <see cref="ElevationGrid"/> from a CSV file previously written by
+        /// <see cref="SaveElevation"/>.
+        /// </summary>
+        /// <param name="path">Path to the <c>.elevation.csv</c> file.</param>
+        /// <returns>
+        /// An <see cref="ElevationGrid"/> reconstructed from the saved data.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the file format is invalid or the row/column counts are inconsistent.
+        /// </exception>
+        public static ElevationGrid LoadElevationGrid(string path)
+        {
+            string[] lines = File.ReadAllLines(path, Encoding.UTF8);
+
+            if (lines.Length < 1)
+                throw new InvalidOperationException("Elevation CSV is empty.");
+
+            string[] header = lines[0].Split(',');
+            if (header.Length < 6)
+                throw new InvalidOperationException(
+                    $"Elevation CSV header has {header.Length} field(s); expected 6 " +
+                    "(minLat,maxLat,minLon,maxLon,rows,cols).");
+
+            double minLat = double.Parse(header[0], CultureInfo.InvariantCulture);
+            double maxLat = double.Parse(header[1], CultureInfo.InvariantCulture);
+            double minLon = double.Parse(header[2], CultureInfo.InvariantCulture);
+            double maxLon = double.Parse(header[3], CultureInfo.InvariantCulture);
+            int    rows   = int.Parse(header[4], CultureInfo.InvariantCulture);
+            int    cols   = int.Parse(header[5], CultureInfo.InvariantCulture);
+
+            if (lines.Length < 1 + rows)
+                throw new InvalidOperationException(
+                    $"Elevation CSV has {lines.Length - 1} data row(s) but the header " +
+                    $"declares {rows}.");
+
+            var elevations = new double[rows, cols];
+            for (int r = 0; r < rows; r++)
+            {
+                string[] values = lines[1 + r].Split(',');
+                if (values.Length < cols)
+                    throw new InvalidOperationException(
+                        $"Elevation CSV data row {r} has {values.Length} value(s) but " +
+                        $"the header declares {cols} columns.");
+
+                for (int c = 0; c < cols; c++)
+                    elevations[r, c] = double.Parse(values[c], CultureInfo.InvariantCulture);
+            }
+
+            return new ElevationGrid(minLat, maxLat, minLon, maxLon, elevations);
         }
     }
 }

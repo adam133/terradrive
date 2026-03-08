@@ -59,7 +59,22 @@ dotnet run --project Tools/OsmDownloader -- --lat 51.5074 --lon -0.1278 --radius
     --output Assets/Data/london_small.osm
 ```
 
-The `.osm` file is saved to `Assets/Data/` and is read by `OSMParser` at runtime.
+To also bundle DEM elevation data alongside the `.osm` file, add `--elevation`.  This
+downloads a SRTM 30 m elevation grid for the same bounding box and saves it as a companion
+`.elevation.csv` file (e.g. `london.elevation.csv`):
+
+```bash
+dotnet run --project Tools/OsmDownloader -- --lat 51.5074 --lon -0.1278 --radius 5000 \
+    --output Assets/Data/london.osm --elevation
+
+# Higher-resolution elevation grid (64×64 samples instead of the default 32×32)
+dotnet run --project Tools/OsmDownloader -- --lat 51.5074 --lon -0.1278 --radius 5000 \
+    --output Assets/Data/london.osm --elevation --dem-rows 64 --dem-cols 64
+```
+
+The `.osm` file is read by `OSMParser` at runtime; the `.elevation.csv` file can be loaded
+with `OsmDownloader.LoadElevationGrid(path)` into an `ElevationGrid` for use with
+`TerrainMeshGenerator.Generate` and `OSMParser.ParseAsync`.
 See [`Tools/README.md`](Tools/README.md) for the full argument reference.
 
 ---
@@ -239,6 +254,7 @@ Run the produced binary to play the game outside the editor.
 |---|---|---|
 | `dotnet test` fails to build | .NET 8 SDK not installed | Install from [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/8) |
 | OSM download times out | Overpass API load | Reduce `--radius` or retry later |
+| Elevation download fails or returns zeros | Open-Elevation API unavailable | Retry later, or self-host an Open-Elevation instance and pass its URL to `OpenElevationSource` |
 | Car falls through ground | Wheel colliders not touching the plane | Move `Car` up until the WheelColliders rest on the Plane |
 | Car spins on the spot | WheelCollider radii too small | Increase the **Radius** on each WheelCollider to match the visual wheel |
 | Camera stutters | `positionDamping` too high | Lower **Position Damping** on the ChaseCam component (try `3`) |
@@ -258,7 +274,7 @@ Run the produced binary to play the game outside the editor.
 | Building footprint → 3D mesh | ✅ Working |
 | Roadside prop placement | ✅ Working |
 | Region / biome detection from OSM tags | ✅ Working |
-| Elevation (DEM) integration | ✅ Working — `ElevationGrid.SampleAsync` + `TerrainMeshGenerator.Generate` + `OSMParser.ParseAsync` |
+| Elevation (DEM) integration | ✅ Working — `ElevationGrid.SampleAsync` + `TerrainMeshGenerator.Generate` + `OSMParser.ParseAsync` + `OsmDownloader --elevation` (downloads SRTM grid alongside `.osm`) |
 | Car physics + chase camera | ✅ Working |
 | Game state machine | ✅ Working |
 | CLI project create + configure (batch mode) | ✅ Working — `ProjectSetup.Configure` via `-executeMethod` |
