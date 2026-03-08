@@ -7,7 +7,7 @@ splines and building footprints, and a terrain mesh generator.
 |---|---|
 | `IElevationSource.cs` | Interface for pluggable DEM backends |
 | `OpenElevationSource.cs` | SRTM 30 m elevation via the [Open-Elevation API](https://open-elevation.com) (no API key required) |
-| `ElevationGrid.cs` | Regular lat/lon grid of DEM samples; factory method `SampleAsync` batch-fetches from any `IElevationSource` |
+| `ElevationGrid.cs` | Regular lat/lon grid of DEM samples; `SampleAsync` batch-fetches from any `IElevationSource`; `SampleElevation` bilinearly interpolates at arbitrary coordinates; also implements `IElevationSource` for scene wiring |
 | `TerrainMeshGenerator.cs` | Generates a UV-mapped heightfield mesh from an `ElevationGrid` |
 | `TerrainMeshResult.cs` | Container returned by `TerrainMeshGenerator.Generate` (vertices, triangles, UVs) |
 
@@ -54,6 +54,38 @@ ElevationGrid grid = await ElevationGrid.SampleAsync(
 double elevMetres = grid[row, col];
 double lat = grid.LatAtRow(row);
 double lon = grid.LonAtCol(col);
+```
+
+### SampleElevation
+
+Returns the terrain height in metres at any arbitrary geographic coordinate via bilinear
+interpolation across the four nearest grid cells.  Coordinates outside the grid extent are
+clamped to the nearest boundary:
+
+```csharp
+double elev = grid.SampleElevation(lat, lon);
+```
+
+### ElevationGrid as IElevationSource (scene wiring)
+
+`ElevationGrid` implements `IElevationSource`, so a pre-built terrain grid can be passed
+directly to any API that accepts an elevation source — most importantly `OSMParser.ParseAsync`
+— to raise road splines and building footprints to match the terrain surface **without
+issuing additional network requests**:
+
+```csharp
+// 1. Build terrain grid (one network request)
+ElevationGrid grid = await ElevationGrid.SampleAsync(
+    minLat, maxLat, minLon, maxLon, rows: 64, cols: 64,
+    new OpenElevationSource());
+
+// 2. Generate terrain mesh
+TerrainMeshResult terrain = TerrainMeshGenerator.Generate(grid, originLat, originLon);
+
+// 3. Parse OSM — road nodes and building corners are lifted to terrain height.
+//    The same grid is reused as the IElevationSource; no extra HTTP calls.
+var (roads, buildings, region) = await OSMParser.ParseAsync(
+    "Assets/Data/london.osm", originLat, originLon, grid);
 ```
 
 ## TerrainMeshGenerator

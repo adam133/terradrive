@@ -124,7 +124,8 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 - [x] Sample elevation for every OSM node during map load and apply Y positions to `RoadSegment` nodes and `BuildingFootprint` corners (via `OSMParser.ParseAsync`).
 - [x] Implement `ElevationGrid` — a regular lat/lon grid of DEM samples with a `SampleAsync` factory that batch-fetches from any `IElevationSource`.
 - [x] Generate a terrain mesh from an `ElevationGrid` using `TerrainMeshGenerator.Generate` — produces a UV-mapped heightfield mesh whose Y coordinates match the sampled elevation data.
-- [ ] Raise road splines and building footprints to match sampled terrain heights (requires Unity scene wiring).
+- [x] Add `ElevationGrid.SampleElevation(lat, lon)` — bilinear interpolation across the four nearest grid cells, returning the terrain height at any arbitrary geographic coordinate.
+- [x] Implement `IElevationSource` on `ElevationGrid` — allows a pre-built terrain grid to be passed directly to `OSMParser.ParseAsync` to raise road splines and building footprints to match the terrain surface without additional network requests (Unity scene wiring).
 - See [`Assets/Scripts/Terrain/IElevationSource.cs`](Assets/Scripts/Terrain/IElevationSource.cs),
   [`Assets/Scripts/Terrain/OpenElevationSource.cs`](Assets/Scripts/Terrain/OpenElevationSource.cs),
   [`Assets/Scripts/Terrain/ElevationGrid.cs`](Assets/Scripts/Terrain/ElevationGrid.cs), and
@@ -174,7 +175,7 @@ They cover the following modules:
 | `RoadSurfaceDeformerTests.cs` | `RoadSurfaceDeformer` |
 | `RoadsidePropPlacerTests.cs` | `RoadsidePropPlacer`, `PropPlacement`, `PropType` |
 | `OpenElevationSourceTests.cs` | `OpenElevationSource`, `IElevationSource` |
-| `TerrainMeshGeneratorTests.cs` | `ElevationGrid`, `TerrainMeshGenerator`, `TerrainMeshResult` |
+| `TerrainMeshGeneratorTests.cs` | `ElevationGrid`, `ElevationGrid.SampleElevation`, `ElevationGrid` as `IElevationSource`, `TerrainMeshGenerator`, `TerrainMeshResult` |
 | `OsmDownloaderTests.cs` | `OsmDownloader` |
 | `ChaseCamIntegrationTests.cs` | `ChaseCam` (integration, renders `chase-cam-preview.png`) |
 | `MapRendererIntegrationTests.cs` | `OSMParser` + `SplineGenerator` (integration, renders `map-preview.png`) |

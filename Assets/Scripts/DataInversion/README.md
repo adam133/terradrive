@@ -13,11 +13,21 @@ Parsing utilities that convert raw OpenStreetMap XML into strongly-typed C# data
 ## OSMParser
 
 ```csharp
+// Synchronous parse — node Y coordinates are always 0.
 var (roads, buildings, region) = OSMParser.Parse("Assets/Data/london.osm", originLat, originLon);
+
+// Async parse with terrain elevation — node Y coordinates are set from the DEM source.
+var (roads, buildings, region) = await OSMParser.ParseAsync(
+    "Assets/Data/london.osm", originLat, originLon, elevationSource);
 ```
 
 The parser reads `country` and `addr:country` tags from OSM nodes to detect the map's region.
 The most common country code found in those tags is mapped to a `RegionType` value.
+
+Pass an `ElevationGrid` (which implements `IElevationSource`) as the `elevationSource`
+argument to `ParseAsync` to raise road splines and building footprints to match the terrain
+surface without additional network requests — see
+[`Assets/Scripts/Terrain/README.md`](../Terrain/README.md) for the full scene wiring pattern.
 
 ### RoadSegment
 
@@ -25,7 +35,7 @@ The most common country code found in those tags is mapped to a `RegionType` val
 |---|---|---|
 | `WayId` | `long` | OSM way identifier |
 | `HighwayType` | `string` | Value of the `highway` tag (e.g. `"primary"`, `"residential"`) |
-| `Nodes` | `List<Vector3>` | World-space XZ positions (Y = 0) of the way's nodes |
+| `Nodes` | `List<Vector3>` | World-space positions of the way's nodes. Y = 0 with `Parse`; Y = terrain elevation (metres) with `ParseAsync` |
 | `Tags` | `Dictionary<string,string>` | All OSM tags on this way |
 | `IsBridge` | `bool` | `true` when the way has a `bridge` tag with a value other than `"no"` (e.g. `"yes"`, `"viaduct"`) |
 
@@ -34,7 +44,7 @@ The most common country code found in those tags is mapped to a `RegionType` val
 | Property | Type | Description |
 |---|---|---|
 | `WayId` | `long` | OSM way identifier |
-| `Footprint` | `List<Vector3>` | Ordered world-space XZ corners of the building outline |
+| `Footprint` | `List<Vector3>` | Ordered world-space corner positions of the building outline. Y = 0 with `Parse`; Y = terrain elevation (metres) with `ParseAsync` |
 | `Tags` | `Dictionary<string,string>` | All OSM tags (e.g. `building:levels`) |
 
 ## RegionType
