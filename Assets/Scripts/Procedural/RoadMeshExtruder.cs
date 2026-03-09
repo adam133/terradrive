@@ -35,6 +35,12 @@ namespace TerraDrive.Procedural
         public const float DefaultLaneMarkingTileLength = 6f;
 
         /// <summary>
+        /// Width per lane in metres used when an explicit lane count is provided.
+        /// Reflects a standard 3.5 m traffic lane.
+        /// </summary>
+        public const float DefaultLaneWidth = 3.5f;
+
+        /// <summary>
         /// Canonical road half-widths (in metres) keyed by <see cref="RoadType"/>.
         /// Values approximate real-world carriageway widths for each functional class.
         /// </summary>
@@ -61,6 +67,20 @@ namespace TerraDrive.Procedural
         /// <returns>Width in metres.</returns>
         public static float GetWidthForRoadType(RoadType roadType) =>
             RoadWidths.TryGetValue(roadType, out float w) ? w : 7f;
+
+        /// <summary>
+        /// Returns the road width in metres, derived from an explicit lane count when
+        /// available, or from the road-type lookup as a fallback.
+        /// </summary>
+        /// <param name="roadType">The functional road classification (used when <paramref name="lanes"/> is 0).</param>
+        /// <param name="lanes">
+        /// Number of lanes from the OSM <c>lanes</c> tag.  When greater than zero the
+        /// width is calculated as <c>lanes × <see cref="DefaultLaneWidth"/></c>.
+        /// Pass 0 (or omit) to fall back to the road-type lookup.
+        /// </param>
+        /// <returns>Width in metres.</returns>
+        public static float GetWidthForRoadType(RoadType roadType, int lanes) =>
+            lanes > 0 ? lanes * DefaultLaneWidth : GetWidthForRoadType(roadType);
 
         /// <summary>
         /// Generates a flat road mesh extruded along <paramref name="splinePoints"/>, using
@@ -164,8 +184,8 @@ namespace TerraDrive.Procedural
         /// Generates a road surface mesh (with UV0 for asphalt tiling and UV1 for
         /// lane-marking tiling) plus a separate kerb mesh, using the canonical width
         /// for <paramref name="roadType"/>.  The <see cref="RoadMeshResult"/> returned
-        /// includes region-appropriate texture identifiers for the road surface and
-        /// the kerb.
+        /// includes region-appropriate texture identifiers for the road surface,
+        /// the kerb, and the lane markings.
         /// </summary>
         /// <param name="splinePoints">
         /// Ordered world-space centre-line positions.  Requires at least two points.
@@ -191,6 +211,15 @@ namespace TerraDrive.Procedural
         /// <c>int</c>) for stable, per-road deformation.  <c>null</c> (default)
         /// produces a perfectly flat surface, which is useful for unit tests.
         /// </param>
+        /// <param name="lanes">
+        /// Number of lanes from the OSM <c>lanes</c> tag.  When greater than zero the
+        /// road width is computed as <c>lanes × <see cref="DefaultLaneWidth"/></c>;
+        /// otherwise the road-type width table is used.  Defaults to 0 (use table).
+        /// </param>
+        /// <param name="isOneWay">
+        /// <c>true</c> when the OSM <c>oneway</c> tag indicates single-direction traffic.
+        /// Affects which lane-marking texture is selected.  Defaults to <c>false</c>.
+        /// </param>
         /// <returns>
         /// A <see cref="RoadMeshResult"/> containing the road mesh, the kerb mesh,
         /// and region-appropriate texture identifiers.
@@ -203,23 +232,26 @@ namespace TerraDrive.Procedural
             float kerbWidth              = DefaultKerbWidth,
             float kerbHeight             = DefaultKerbHeight,
             RegionType region            = RegionType.Unknown,
-            int? surfaceSeed             = null) =>
+            int? surfaceSeed             = null,
+            int lanes                    = 0,
+            bool isOneWay                = false) =>
             ExtrudeWithDetails(
                 splinePoints,
-                GetWidthForRoadType(roadType),
+                GetWidthForRoadType(roadType, lanes),
                 uvTileLength,
                 laneMarkingTileLength,
                 kerbWidth,
                 kerbHeight,
                 region,
                 roadType,
-                surfaceSeed);
+                surfaceSeed,
+                isOneWay);
 
         /// <summary>
         /// Generates a road surface mesh (with UV0 for asphalt tiling and UV1 for
         /// lane-marking tiling) plus a separate kerb mesh.  The <see cref="RoadMeshResult"/>
-        /// returned includes region-appropriate texture identifiers for the road surface
-        /// and the kerb.
+        /// returned includes region-appropriate texture identifiers for the road surface,
+        /// the kerb, and the lane markings.
         /// </summary>
         /// <param name="splinePoints">
         /// Ordered world-space centre-line positions.  Requires at least two points.
@@ -248,6 +280,10 @@ namespace TerraDrive.Procedural
         /// <c>int</c>) for stable, per-road deformation.  <c>null</c> (default)
         /// produces a perfectly flat surface.
         /// </param>
+        /// <param name="isOneWay">
+        /// <c>true</c> when the OSM <c>oneway</c> tag indicates single-direction traffic.
+        /// Affects which lane-marking texture is selected.  Defaults to <c>false</c>.
+        /// </param>
         /// <returns>
         /// A <see cref="RoadMeshResult"/> containing the road mesh, the kerb mesh,
         /// and region-appropriate texture identifiers.
@@ -261,7 +297,8 @@ namespace TerraDrive.Procedural
             float kerbHeight             = DefaultKerbHeight,
             RegionType region            = RegionType.Unknown,
             RoadType roadType            = RoadType.Unknown,
-            int? surfaceSeed             = null)
+            int? surfaceSeed             = null,
+            bool isOneWay                = false)
         {
             if (splinePoints == null || splinePoints.Count < 2)
             {
@@ -330,10 +367,11 @@ namespace TerraDrive.Procedural
             Mesh kerbMesh = BuildKerbMesh(pts, halfWidth, kerbWidth, kerbHeight, uvTileLength);
 
             // ── Texture identifiers ──────────────────────────────────────────
-            string roadTextureId = RegionTextures.GetRoadSurfaceTextureId(region, roadType);
-            string kerbTextureId = RegionTextures.GetKerbTextureId(region);
+            string roadTextureId        = RegionTextures.GetRoadSurfaceTextureId(region, roadType);
+            string kerbTextureId        = RegionTextures.GetKerbTextureId(region);
+            string laneMarkingTextureId = RegionTextures.GetLaneMarkingTextureId(isOneWay);
 
-            return new RoadMeshResult(roadMesh, kerbMesh, roadTextureId, kerbTextureId);
+            return new RoadMeshResult(roadMesh, kerbMesh, roadTextureId, kerbTextureId, laneMarkingTextureId);
         }
 
         // ── Private helpers ───────────────────────────────────────────────────

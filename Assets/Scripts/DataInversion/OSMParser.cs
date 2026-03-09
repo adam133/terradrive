@@ -32,6 +32,18 @@ namespace TerraDrive.DataInversion
         /// on a bridge structure and should be raised above the surface mesh.
         /// </summary>
         public bool IsBridge { get; set; }
+
+        /// <summary>
+        /// Number of lanes from the OSM <c>lanes</c> tag.  Zero means the tag was absent
+        /// or could not be parsed; callers should fall back to road-type defaults.
+        /// </summary>
+        public int Lanes { get; set; }
+
+        /// <summary>
+        /// <c>true</c> when the OSM <c>oneway</c> tag is set to <c>"yes"</c>, <c>"1"</c>,
+        /// or <c>"true"</c>, indicating traffic flows in one direction only.
+        /// </summary>
+        public bool IsOneWay { get; set; }
     }
 
     /// <summary>
@@ -105,11 +117,13 @@ namespace TerraDrive.DataInversion
                 {
                     roads.Add(new RoadSegment
                     {
-                        WayId = wayId,
+                        WayId       = wayId,
                         HighwayType = highwayType,
-                        Nodes = nodeRefs,
-                        Tags = tags,
-                        IsBridge = IsBridgeWay(tags),
+                        Nodes       = nodeRefs,
+                        Tags        = tags,
+                        IsBridge    = IsBridgeWay(tags),
+                        Lanes       = ParseLanes(tags),
+                        IsOneWay    = IsOneWayRoad(tags),
                     });
                 }
                 else if (tags.ContainsKey("building"))
@@ -229,6 +243,8 @@ namespace TerraDrive.DataInversion
                         Nodes       = nodeRefs,
                         Tags        = tags,
                         IsBridge    = IsBridgeWay(tags),
+                        Lanes       = ParseLanes(tags),
+                        IsOneWay    = IsOneWayRoad(tags),
                     });
                 }
                 else if (tags.ContainsKey("building"))
@@ -394,6 +410,26 @@ namespace TerraDrive.DataInversion
         private static bool IsBridgeWay(Dictionary<string, string> tags) =>
             tags.TryGetValue("bridge", out string bridgeValue) &&
             !string.Equals(bridgeValue, "no", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Parses the OSM <c>lanes</c> tag into a positive integer.
+        /// Returns 0 when the tag is absent or cannot be parsed.
+        /// </summary>
+        private static int ParseLanes(Dictionary<string, string> tags) =>
+            tags.TryGetValue("lanes", out string lanesStr) &&
+            int.TryParse(lanesStr, out int lanes) && lanes > 0
+                ? lanes
+                : 0;
+
+        /// <summary>
+        /// Returns <c>true</c> when the OSM <c>oneway</c> tag explicitly indicates a
+        /// one-way road (<c>"yes"</c>, <c>"1"</c>, or <c>"true"</c>).
+        /// </summary>
+        private static bool IsOneWayRoad(Dictionary<string, string> tags) =>
+            tags.TryGetValue("oneway", out string oneway) &&
+            (string.Equals(oneway, "yes",  StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(oneway, "1",    StringComparison.Ordinal) ||
+             string.Equals(oneway, "true", StringComparison.OrdinalIgnoreCase));
 
         /// <summary>
         /// Returns <c>true</c> when <paramref name="tags"/> describe a closed-polygon

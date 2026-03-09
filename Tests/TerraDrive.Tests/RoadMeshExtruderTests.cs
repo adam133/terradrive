@@ -480,5 +480,107 @@ namespace TerraDrive.Tests
             Assert.That(temperate.RoadTextureId, Is.Not.EqualTo(desert.RoadTextureId),
                 "Temperate and Desert regions should use different road textures.");
         }
+
+        // ── Lane count and one-way ────────────────────────────────────────────
+
+        [Test]
+        public void GetWidthForRoadType_WithLanes_UsesLaneCountOverTable()
+        {
+            // 4 lanes × 3.5 m = 14 m — wider than the Primary table value (12 m)
+            float width = RoadMeshExtruder.GetWidthForRoadType(RoadType.Primary, lanes: 4);
+
+            Assert.That(width, Is.EqualTo(4 * RoadMeshExtruder.DefaultLaneWidth).Within(1e-4f));
+        }
+
+        [Test]
+        public void GetWidthForRoadType_ZeroLanes_FallsBackToTable()
+        {
+            float withZero  = RoadMeshExtruder.GetWidthForRoadType(RoadType.Residential, lanes: 0);
+            float tableWidth = RoadMeshExtruder.GetWidthForRoadType(RoadType.Residential);
+
+            Assert.That(withZero, Is.EqualTo(tableWidth).Within(1e-4f));
+        }
+
+        [Test]
+        public void GetWidthForRoadType_TwoLanes_NarrowerThanFourLanes()
+        {
+            float two  = RoadMeshExtruder.GetWidthForRoadType(RoadType.Primary, lanes: 2);
+            float four = RoadMeshExtruder.GetWidthForRoadType(RoadType.Primary, lanes: 4);
+
+            Assert.That(two, Is.LessThan(four));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_WithLanes_MeshWidthReflectsLaneCount()
+        {
+            const int lanes = 3;
+            float expectedWidth = lanes * RoadMeshExtruder.DefaultLaneWidth;
+
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(
+                TwoPoints, RoadType.Primary, lanes: lanes);
+
+            float actual = result.RoadMesh.Vertices[1].x - result.RoadMesh.Vertices[0].x;
+            Assert.That(actual, Is.EqualTo(expectedWidth).Within(1e-4f));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_MoreLanesProducesWiderMesh()
+        {
+            RoadMeshResult two  = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, RoadType.Primary, lanes: 2);
+            RoadMeshResult four = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, RoadType.Primary, lanes: 4);
+
+            float twoWidth  = two.RoadMesh.Vertices[1].x  - two.RoadMesh.Vertices[0].x;
+            float fourWidth = four.RoadMesh.Vertices[1].x - four.RoadMesh.Vertices[0].x;
+
+            Assert.That(fourWidth, Is.GreaterThan(twoWidth));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_TwoWay_HasTwoWayLaneMarkingTexture()
+        {
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(
+                TwoPoints, RoadType.Primary, isOneWay: false);
+
+            Assert.That(result.LaneMarkingTextureId, Is.EqualTo("lane_marking_twoway"));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_OneWay_HasOneWayLaneMarkingTexture()
+        {
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(
+                TwoPoints, RoadType.Primary, isOneWay: true);
+
+            Assert.That(result.LaneMarkingTextureId, Is.EqualTo("lane_marking_oneway"));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_DefaultIsNotOneWay_HasTwoWayLaneMarkingTexture()
+        {
+            // Default call (no isOneWay argument) should produce two-way markings.
+            RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, RoadType.Secondary);
+
+            Assert.That(result.LaneMarkingTextureId, Is.EqualTo("lane_marking_twoway"));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_OneWayVsTwoWay_ProduceDifferentLaneMarkingTextures()
+        {
+            RoadMeshResult oneway  = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, RoadType.Primary, isOneWay: true);
+            RoadMeshResult twoway  = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, RoadType.Primary, isOneWay: false);
+
+            Assert.That(oneway.LaneMarkingTextureId, Is.Not.EqualTo(twoway.LaneMarkingTextureId));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_LaneMarkingTextureId_IsNonEmptyForAllRoadTypes()
+        {
+            foreach (RoadType rt in System.Enum.GetValues(typeof(RoadType)))
+            {
+                RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(TwoPoints, rt);
+
+                Assert.That(result.LaneMarkingTextureId, Is.Not.Null.And.Not.Empty,
+                    $"LaneMarkingTextureId must not be empty for road type '{rt}'.");
+            }
+        }
     }
 }

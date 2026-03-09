@@ -42,18 +42,28 @@ namespace TerraDrive.Procedural
         public readonly string KerbTextureId;
 
         /// <summary>
+        /// Texture asset name for the lane-marking overlay applied via UV channel 1.
+        /// Encodes whether the road is one-way or two-way (e.g.
+        /// <c>"lane_marking_oneway"</c> vs <c>"lane_marking_twoway"</c>).
+        /// </summary>
+        public readonly string LaneMarkingTextureId;
+
+        /// <summary>
         /// Creates a new <see cref="RoadMeshResult"/>.
         /// </summary>
         /// <param name="roadMesh">The extruded road surface mesh.</param>
         /// <param name="kerbMesh">The combined kerb mesh.</param>
         /// <param name="roadTextureId">Texture asset name for the road surface.</param>
         /// <param name="kerbTextureId">Texture asset name for the kerb surface.</param>
-        public RoadMeshResult(Mesh roadMesh, Mesh kerbMesh, string roadTextureId, string kerbTextureId)
+        /// <param name="laneMarkingTextureId">Texture asset name for the lane-marking overlay.</param>
+        public RoadMeshResult(Mesh roadMesh, Mesh kerbMesh, string roadTextureId, string kerbTextureId,
+                              string laneMarkingTextureId = "")
         {
-            RoadMesh      = roadMesh;
-            KerbMesh      = kerbMesh;
-            RoadTextureId = roadTextureId;
-            KerbTextureId = kerbTextureId;
+            RoadMesh             = roadMesh;
+            KerbMesh             = kerbMesh;
+            RoadTextureId        = roadTextureId;
+            KerbTextureId        = kerbTextureId;
+            LaneMarkingTextureId = laneMarkingTextureId;
         }
     }
 }

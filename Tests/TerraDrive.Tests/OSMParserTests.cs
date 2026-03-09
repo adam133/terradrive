@@ -1218,5 +1218,193 @@ namespace TerraDrive.Tests
             }
             finally { DeleteFile(path); }
         }
+
+        // ── Lanes ──────────────────────────────────────────────────────────────
+
+        [Test]
+        public void Parse_RoadWithLanesTag_SetsLanesProperty()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1000'/>
+  <node id='2' lat='51.5010' lon='-0.1000'/>
+  <way id='10'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='primary'/>
+    <tag k='lanes' v='4'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+
+                Assert.That(roads[0].Lanes, Is.EqualTo(4));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_RoadWithoutLanesTag_LanesIsZero()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1000'/>
+  <node id='2' lat='51.5010' lon='-0.1000'/>
+  <way id='10'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='residential'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+
+                Assert.That(roads[0].Lanes, Is.EqualTo(0));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_RoadWithNonNumericLanesTag_LanesIsZero()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1000'/>
+  <node id='2' lat='51.5010' lon='-0.1000'/>
+  <way id='10'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='primary'/>
+    <tag k='lanes' v='unknown'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+
+                Assert.That(roads[0].Lanes, Is.EqualTo(0));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        // ── One-way ────────────────────────────────────────────────────────────
+
+        [Test]
+        public void Parse_RoadWithOnewayYes_IsOneWayTrue()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1000'/>
+  <node id='2' lat='51.5010' lon='-0.1000'/>
+  <way id='10'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='primary'/>
+    <tag k='oneway' v='yes'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+
+                Assert.That(roads[0].IsOneWay, Is.True);
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_RoadWithOnewayNo_IsOneWayFalse()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1000'/>
+  <node id='2' lat='51.5010' lon='-0.1000'/>
+  <way id='10'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='secondary'/>
+    <tag k='oneway' v='no'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+
+                Assert.That(roads[0].IsOneWay, Is.False);
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_RoadWithoutOnewayTag_IsOneWayFalse()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1000'/>
+  <node id='2' lat='51.5010' lon='-0.1000'/>
+  <way id='10'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='residential'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+
+                Assert.That(roads[0].IsOneWay, Is.False);
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_RoadWithOneway1_IsOneWayTrue()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1000'/>
+  <node id='2' lat='51.5010' lon='-0.1000'/>
+  <way id='10'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='primary'/>
+    <tag k='oneway' v='1'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+
+                Assert.That(roads[0].IsOneWay, Is.True);
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_RoadWithBothLanesAndOneway_SetsBothProperties()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5000' lon='-0.1000'/>
+  <node id='2' lat='51.5010' lon='-0.1000'/>
+  <way id='10'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='motorway'/>
+    <tag k='lanes' v='3'/>
+    <tag k='oneway' v='yes'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+
+                Assert.That(roads[0].Lanes,    Is.EqualTo(3));
+                Assert.That(roads[0].IsOneWay, Is.True);
+            }
+            finally { DeleteFile(path); }
+        }
     }
 }
