@@ -52,7 +52,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, buildings, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+                var (roads, buildings, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
 
                 Assert.That(roads.Count, Is.EqualTo(1), "Expected one road segment");
                 Assert.That(buildings.Count, Is.EqualTo(0));
@@ -80,7 +80,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1278);
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1278);
 
                 // The first node is exactly at the origin, so it should project to (0,0,0)
                 Vector3 origin = roads[0].Nodes[0];
@@ -107,7 +107,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1278);
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1278);
 
                 Vector3 northNode = roads[0].Nodes[1];
                 Assert.That(northNode.z, Is.GreaterThan(0f), "Node north of origin should have positive Z");
@@ -130,7 +130,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1278);
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1278);
 
                 Vector3 eastNode = roads[0].Nodes[1];
                 Assert.That(eastNode.x, Is.GreaterThan(0f), "Node east of origin should have positive X");
@@ -155,7 +155,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _, _) = OSMParser.Parse(path, 51.0, -0.1);
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.0, -0.1);
 
                 Assert.That(roads[0].Tags["highway"], Is.EqualTo("trunk"));
                 Assert.That(roads[0].Tags["name"], Is.EqualTo("Test Road"));
@@ -184,7 +184,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _, _) = OSMParser.Parse(path, 51.5, -0.1);
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5, -0.1);
 
                 Assert.That(roads.Count, Is.EqualTo(2));
             }
@@ -210,7 +210,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, buildings, _) = OSMParser.Parse(path, 51.50, -0.10);
+                var (roads, buildings, _, _) = OSMParser.Parse(path, 51.50, -0.10);
 
                 Assert.That(roads.Count, Is.EqualTo(0));
                 Assert.That(buildings.Count, Is.EqualTo(1));
@@ -239,7 +239,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (_, buildings, _) = OSMParser.Parse(path, 51.0, -0.1);
+                var (_, buildings, _, _) = OSMParser.Parse(path, 51.0, -0.1);
 
                 Assert.That(buildings[0].Tags["building"], Is.EqualTo("residential"));
                 Assert.That(buildings[0].Tags["building:levels"], Is.EqualTo("3"));
@@ -269,7 +269,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, buildings, _) = OSMParser.Parse(path, 51.5, -0.1);
+                var (roads, buildings, _, _) = OSMParser.Parse(path, 51.5, -0.1);
 
                 Assert.That(roads.Count, Is.EqualTo(1));
                 Assert.That(buildings.Count, Is.EqualTo(1));
@@ -294,7 +294,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, buildings, _) = OSMParser.Parse(path, 51.5, -0.1);
+                var (roads, buildings, _, _) = OSMParser.Parse(path, 51.5, -0.1);
 
                 Assert.That(roads.Count, Is.EqualTo(0));
                 Assert.That(buildings.Count, Is.EqualTo(0));
@@ -311,7 +311,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, buildings, _) = OSMParser.Parse(path, 0, 0);
+                var (roads, buildings, _, _) = OSMParser.Parse(path, 0, 0);
 
                 Assert.That(roads.Count, Is.EqualTo(0));
                 Assert.That(buildings.Count, Is.EqualTo(0));
@@ -334,7 +334,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _, _) = OSMParser.Parse(path, 51.5, -0.1);
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5, -0.1);
 
                 // The way is still returned, but only the valid node is included
                 Assert.That(roads.Count, Is.EqualTo(1));
@@ -366,7 +366,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (_, _, region) = OSMParser.Parse(path, 51.5, -0.1);
+                var (_, _, _, region) = OSMParser.Parse(path, 51.5, -0.1);
                 Assert.That(region, Is.EqualTo(RegionType.Temperate));
             }
             finally { DeleteFile(path); }
@@ -384,7 +384,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (_, _, region) = OSMParser.Parse(path, 24.4, 54.4);
+                var (_, _, _, region) = OSMParser.Parse(path, 24.4, 54.4);
                 Assert.That(region, Is.EqualTo(RegionType.Desert));
             }
             finally { DeleteFile(path); }
@@ -402,7 +402,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (_, _, region) = OSMParser.Parse(path, -3.1, -60.0);
+                var (_, _, _, region) = OSMParser.Parse(path, -3.1, -60.0);
                 Assert.That(region, Is.EqualTo(RegionType.Tropical));
             }
             finally { DeleteFile(path); }
@@ -420,7 +420,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (_, _, region) = OSMParser.Parse(path, 64.9, 25.7);
+                var (_, _, _, region) = OSMParser.Parse(path, 64.9, 25.7);
                 Assert.That(region, Is.EqualTo(RegionType.Boreal));
             }
             finally { DeleteFile(path); }
@@ -438,7 +438,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (_, _, region) = OSMParser.Parse(path, 72.0, -40.0);
+                var (_, _, _, region) = OSMParser.Parse(path, 72.0, -40.0);
                 Assert.That(region, Is.EqualTo(RegionType.Arctic));
             }
             finally { DeleteFile(path); }
@@ -456,7 +456,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (_, _, region) = OSMParser.Parse(path, 41.9, 12.5);
+                var (_, _, _, region) = OSMParser.Parse(path, 41.9, 12.5);
                 Assert.That(region, Is.EqualTo(RegionType.Mediterranean));
             }
             finally { DeleteFile(path); }
@@ -474,7 +474,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (_, _, region) = OSMParser.Parse(path, 51.2, 71.4);
+                var (_, _, _, region) = OSMParser.Parse(path, 51.2, 71.4);
                 Assert.That(region, Is.EqualTo(RegionType.Steppe));
             }
             finally { DeleteFile(path); }
@@ -491,7 +491,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (_, _, region) = OSMParser.Parse(path, 51.5, -0.1);
+                var (_, _, _, region) = OSMParser.Parse(path, 51.5, -0.1);
                 Assert.That(region, Is.EqualTo(RegionType.Unknown));
             }
             finally { DeleteFile(path); }
@@ -509,7 +509,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (_, _, region) = OSMParser.Parse(path, 0.0, 0.0);
+                var (_, _, _, region) = OSMParser.Parse(path, 0.0, 0.0);
                 Assert.That(region, Is.EqualTo(RegionType.Unknown));
             }
             finally { DeleteFile(path); }
@@ -537,7 +537,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (_, _, region) = OSMParser.Parse(path, 52.5, 13.4);
+                var (_, _, _, region) = OSMParser.Parse(path, 52.5, 13.4);
                 Assert.That(region, Is.EqualTo(RegionType.Temperate));
             }
             finally { DeleteFile(path); }
@@ -556,7 +556,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (_, _, region) = OSMParser.Parse(path, 51.5, -0.1);
+                var (_, _, _, region) = OSMParser.Parse(path, 51.5, -0.1);
                 Assert.That(region, Is.EqualTo(RegionType.Temperate));
             }
             finally { DeleteFile(path); }
@@ -613,7 +613,7 @@ namespace TerraDrive.Tests
             try
             {
                 var source = new FixedElevationSource(elev);
-                var (roads, _, _) = await OSMParser.ParseAsync(path, 51.5000, -0.1000, source);
+                var (roads, _, _, _) = await OSMParser.ParseAsync(path, 51.5000, -0.1000, source);
 
                 Assert.That(roads.Count, Is.EqualTo(1));
                 foreach (Vector3 node in roads[0].Nodes)
@@ -642,7 +642,7 @@ namespace TerraDrive.Tests
             try
             {
                 var source = new FixedElevationSource(elev);
-                var (_, buildings, _) = await OSMParser.ParseAsync(path, 51.50, -0.10, source);
+                var (_, buildings, _, _) = await OSMParser.ParseAsync(path, 51.50, -0.10, source);
 
                 Assert.That(buildings.Count, Is.EqualTo(1));
                 foreach (Vector3 corner in buildings[0].Footprint)
@@ -669,7 +669,7 @@ namespace TerraDrive.Tests
             try
             {
                 var source = new FixedElevationSource(elev);
-                var (roads, _, _) = await OSMParser.ParseAsync(path, 51.5000, -0.1278, source);
+                var (roads, _, _, _) = await OSMParser.ParseAsync(path, 51.5000, -0.1278, source);
 
                 Vector3 origin = roads[0].Nodes[0];
                 Assert.That(origin.x, Is.EqualTo(0f).Within(0.01f), "Origin node X should be 0");
@@ -743,7 +743,7 @@ namespace TerraDrive.Tests
             try
             {
                 var source = new FixedElevationSource(0.0);
-                var (roads, _, _) = await OSMParser.ParseAsync(path, 51.5, -0.1, source);
+                var (roads, _, _, _) = await OSMParser.ParseAsync(path, 51.5, -0.1, source);
 
                 foreach (Vector3 node in roads[0].Nodes)
                     Assert.That(node.y, Is.EqualTo(0f), "Zero elevation should give Y = 0.");
@@ -769,7 +769,7 @@ namespace TerraDrive.Tests
             {
                 // Nodes are enumerated in document order: id=1 first, id=2 second
                 var source = new IndexedElevationSource(10.0, 50.0);
-                var (roads, _, _) = await OSMParser.ParseAsync(path, 51.5000, -0.1278, source);
+                var (roads, _, _, _) = await OSMParser.ParseAsync(path, 51.5000, -0.1278, source);
 
                 Assert.That(roads[0].Nodes[0].y, Is.EqualTo(10f).Within(0.001f),
                     "First node Y should be 10m.");
@@ -811,7 +811,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
 
                 Assert.That(roads[0].IsBridge, Is.True,
                     "bridge=yes should set IsBridge to true.");
@@ -835,7 +835,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
 
                 Assert.That(roads[0].IsBridge, Is.True,
                     "bridge=viaduct should set IsBridge to true.");
@@ -858,7 +858,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
 
                 Assert.That(roads[0].IsBridge, Is.False,
                     "A way without a bridge tag should not be flagged as a bridge.");
@@ -882,7 +882,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
 
                 Assert.That(roads[0].IsBridge, Is.False,
                     "bridge=no should not set IsBridge to true.");
@@ -911,7 +911,7 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
 
                 Assert.That(roads.Count, Is.EqualTo(2));
                 RoadSegment bridgeRoad    = roads.Find(r => r.WayId == 301)!;
@@ -941,11 +941,280 @@ namespace TerraDrive.Tests
             string path = WriteTempOsm(osm);
             try
             {
-                var (roads, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
+                var (roads, _, _, _) = OSMParser.Parse(path, 51.5000, -0.1000);
 
                 Assert.That(roads[0].Tags.ContainsKey("bridge"), Is.True,
                     "The bridge tag should be present in the Tags dictionary.");
                 Assert.That(roads[0].Tags["bridge"], Is.EqualTo("yes"));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        // ── Water body parsing ─────────────────────────────────────────────────
+
+        [Test]
+        public void Parse_NaturalWaterWay_ReturnsOneWaterBody()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.50' lon='-0.10'/>
+  <node id='2' lat='51.50' lon='-0.09'/>
+  <node id='3' lat='51.51' lon='-0.09'/>
+  <node id='4' lat='51.51' lon='-0.10'/>
+  <way id='300'>
+    <nd ref='1'/><nd ref='2'/><nd ref='3'/><nd ref='4'/><nd ref='1'/>
+    <tag k='natural' v='water'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (roads, buildings, waterBodies, _) = OSMParser.Parse(path, 51.50, -0.10);
+
+                Assert.That(roads.Count, Is.EqualTo(0));
+                Assert.That(buildings.Count, Is.EqualTo(0));
+                Assert.That(waterBodies.Count, Is.EqualTo(1), "Expected one water body");
+
+                WaterBody water = waterBodies[0];
+                Assert.That(water.WayId, Is.EqualTo(300));
+                Assert.That(water.Outline.Count, Is.EqualTo(5), "Closed ring has 5 nodes");
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_NaturalWaterLake_WaterTypeIsLake()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.50' lon='-0.10'/>
+  <node id='2' lat='51.50' lon='-0.09'/>
+  <node id='3' lat='51.51' lon='-0.09'/>
+  <way id='400'>
+    <nd ref='1'/><nd ref='2'/><nd ref='3'/>
+    <tag k='natural' v='water'/>
+    <tag k='water' v='lake'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, waterBodies, _) = OSMParser.Parse(path, 51.50, -0.10);
+
+                Assert.That(waterBodies.Count, Is.EqualTo(1));
+                Assert.That(waterBodies[0].WaterType, Is.EqualTo("lake"));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_NaturalWaterNoSubType_WaterTypeDefaultsToWater()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.50' lon='-0.10'/>
+  <node id='2' lat='51.50' lon='-0.09'/>
+  <node id='3' lat='51.51' lon='-0.09'/>
+  <way id='401'>
+    <nd ref='1'/><nd ref='2'/><nd ref='3'/>
+    <tag k='natural' v='water'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, waterBodies, _) = OSMParser.Parse(path, 51.50, -0.10);
+
+                Assert.That(waterBodies.Count, Is.EqualTo(1));
+                Assert.That(waterBodies[0].WaterType, Is.EqualTo("water"));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_WaterwayRiverbankWay_ReturnsOneWaterBody()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.50' lon='-0.10'/>
+  <node id='2' lat='51.50' lon='-0.09'/>
+  <node id='3' lat='51.51' lon='-0.09'/>
+  <way id='500'>
+    <nd ref='1'/><nd ref='2'/><nd ref='3'/>
+    <tag k='waterway' v='riverbank'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, waterBodies, _) = OSMParser.Parse(path, 51.50, -0.10);
+
+                Assert.That(waterBodies.Count, Is.EqualTo(1));
+                Assert.That(waterBodies[0].WaterType, Is.EqualTo("riverbank"));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_WaterwayDockWay_ReturnsOneWaterBody()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.50' lon='-0.10'/>
+  <node id='2' lat='51.50' lon='-0.09'/>
+  <node id='3' lat='51.51' lon='-0.09'/>
+  <way id='501'>
+    <nd ref='1'/><nd ref='2'/><nd ref='3'/>
+    <tag k='waterway' v='dock'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, waterBodies, _) = OSMParser.Parse(path, 51.50, -0.10);
+
+                Assert.That(waterBodies.Count, Is.EqualTo(1));
+                Assert.That(waterBodies[0].WaterType, Is.EqualTo("dock"));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_LanduseReservoir_ReturnsOneWaterBody()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.50' lon='-0.10'/>
+  <node id='2' lat='51.50' lon='-0.09'/>
+  <node id='3' lat='51.51' lon='-0.09'/>
+  <way id='600'>
+    <nd ref='1'/><nd ref='2'/><nd ref='3'/>
+    <tag k='landuse' v='reservoir'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, waterBodies, _) = OSMParser.Parse(path, 51.50, -0.10);
+
+                Assert.That(waterBodies.Count, Is.EqualTo(1));
+                Assert.That(waterBodies[0].WaterType, Is.EqualTo("reservoir"));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_WaterTagsAreCopied()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.50' lon='-0.10'/>
+  <node id='2' lat='51.50' lon='-0.09'/>
+  <node id='3' lat='51.51' lon='-0.09'/>
+  <way id='700'>
+    <nd ref='1'/><nd ref='2'/><nd ref='3'/>
+    <tag k='natural' v='water'/>
+    <tag k='water' v='pond'/>
+    <tag k='name' v='Test Pond'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, waterBodies, _) = OSMParser.Parse(path, 51.50, -0.10);
+
+                Assert.That(waterBodies[0].Tags["natural"], Is.EqualTo("water"));
+                Assert.That(waterBodies[0].Tags["water"], Is.EqualTo("pond"));
+                Assert.That(waterBodies[0].Tags["name"], Is.EqualTo("Test Pond"));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_WaterWayWithFewerThanThreeNodes_IsIgnored()
+        {
+            // A 2-node water way cannot form a polygon — it must be skipped.
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.50' lon='-0.10'/>
+  <node id='2' lat='51.50' lon='-0.09'/>
+  <way id='800'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='natural' v='water'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (_, _, waterBodies, _) = OSMParser.Parse(path, 51.50, -0.10);
+
+                Assert.That(waterBodies.Count, Is.EqualTo(0),
+                    "A water way with fewer than 3 nodes should be ignored.");
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public void Parse_MixedRoadsBuildingsAndWater_CorrectlySegregated()
+        {
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.5' lon='-0.1'/>
+  <node id='2' lat='51.6' lon='-0.1'/>
+  <node id='3' lat='51.5' lon='-0.2'/>
+  <node id='4' lat='51.6' lon='-0.2'/>
+  <way id='10'>
+    <nd ref='1'/><nd ref='2'/>
+    <tag k='highway' v='primary'/>
+  </way>
+  <way id='20'>
+    <nd ref='1'/><nd ref='2'/><nd ref='3'/>
+    <tag k='building' v='yes'/>
+  </way>
+  <way id='30'>
+    <nd ref='1'/><nd ref='2'/><nd ref='3'/><nd ref='4'/>
+    <tag k='natural' v='water'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var (roads, buildings, waterBodies, _) = OSMParser.Parse(path, 51.5, -0.1);
+
+                Assert.That(roads.Count, Is.EqualTo(1), "One road");
+                Assert.That(buildings.Count, Is.EqualTo(1), "One building");
+                Assert.That(waterBodies.Count, Is.EqualTo(1), "One water body");
+                Assert.That(roads[0].WayId, Is.EqualTo(10));
+                Assert.That(buildings[0].WayId, Is.EqualTo(20));
+                Assert.That(waterBodies[0].WayId, Is.EqualTo(30));
+            }
+            finally { DeleteFile(path); }
+        }
+
+        [Test]
+        public async Task ParseAsync_WaterBody_HasElevationAppliedToY()
+        {
+            const double elev = 25.0;
+            string osm = @"<?xml version='1.0'?>
+<osm version='0.6'>
+  <node id='1' lat='51.50' lon='-0.10'/>
+  <node id='2' lat='51.50' lon='-0.09'/>
+  <node id='3' lat='51.51' lon='-0.09'/>
+  <way id='900'>
+    <nd ref='1'/><nd ref='2'/><nd ref='3'/>
+    <tag k='natural' v='water'/>
+  </way>
+</osm>";
+            string path = WriteTempOsm(osm);
+            try
+            {
+                var source = new FixedElevationSource(elev);
+                var (_, _, waterBodies, _) = await OSMParser.ParseAsync(path, 51.50, -0.10, source);
+
+                Assert.That(waterBodies.Count, Is.EqualTo(1));
+                foreach (UnityEngine.Vector3 node in waterBodies[0].Outline)
+                    Assert.That(node.y, Is.EqualTo((float)elev).Within(0.001f),
+                        "Water body outline Y should equal the sampled elevation.");
             }
             finally { DeleteFile(path); }
         }

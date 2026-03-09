@@ -75,7 +75,7 @@ namespace TerraDrive.Tests
             const double originLon = OriginLon;
 
             CoordinateConverter.ResetWorldOrigin();
-            var (roads, buildings, _) = OSMParser.Parse(osmPath, originLat, originLon);
+            var (roads, buildings, _, _) = OSMParser.Parse(osmPath, originLat, originLon);
 
             // Static camera position: the car is at world origin (0, 0) — the
             // centre of the test map — facing forward (+Z direction).

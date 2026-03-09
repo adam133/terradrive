@@ -303,6 +303,7 @@ namespace TerraDrive.Tests
             var fakeMap = new MapData(
                 new System.Collections.Generic.List<TerraDrive.DataInversion.RoadSegment>(),
                 new System.Collections.Generic.List<TerraDrive.DataInversion.BuildingFootprint>(),
+                new System.Collections.Generic.List<TerraDrive.DataInversion.WaterBody>(),
                 TerraDrive.DataInversion.RegionType.Unknown,
                 new TerraDrive.Terrain.TerrainMeshResult(
                     new Vector3[0], new int[0], new UnityEngine.Vector2[0]),

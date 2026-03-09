@@ -70,10 +70,11 @@ namespace TerraDrive.DataInversion
         /// <param name="originLon">Map origin longitude — maps to world (0, 0, 0).</param>
         /// <returns>
         /// A tuple containing a list of <see cref="RoadSegment"/>s, a list of
-        /// <see cref="BuildingFootprint"/>s, and a <see cref="RegionType"/> derived from
-        /// the most common country code found on nodes in the file.
+        /// <see cref="BuildingFootprint"/>s, a list of <see cref="WaterBody"/>s, and a
+        /// <see cref="RegionType"/> derived from the most common country code found on
+        /// nodes in the file.
         /// </returns>
-        public static (List<RoadSegment> roads, List<BuildingFootprint> buildings, RegionType region)
+        public static (List<RoadSegment> roads, List<BuildingFootprint> buildings, List<WaterBody> waterBodies, RegionType region)
             Parse(string filePath, double originLat, double originLon)
         {
             XDocument doc = XDocument.Load(filePath);
@@ -89,8 +90,9 @@ namespace TerraDrive.DataInversion
                 nodePositions[id] = CoordinateConverter.LatLonToUnity(lat, lon, originLat, originLon);
             }
 
-            var roads = new List<RoadSegment>();
-            var buildings = new List<BuildingFootprint>();
+            var roads       = new List<RoadSegment>();
+            var buildings   = new List<BuildingFootprint>();
+            var waterBodies = new List<WaterBody>();
 
             // ── Process ways ───────────────────────────────────────────────────
             foreach (XElement way in root.Elements("way"))
@@ -119,14 +121,24 @@ namespace TerraDrive.DataInversion
                         Tags = tags,
                     });
                 }
+                else if (nodeRefs.Count >= 3 && TryGetWaterType(tags, out string waterType))
+                {
+                    waterBodies.Add(new WaterBody
+                    {
+                        WayId     = wayId,
+                        Outline   = nodeRefs,
+                        Tags      = tags,
+                        WaterType = waterType,
+                    });
+                }
             }
 
             // ── Detect region from node country tags ───────────────────────────
             RegionType region = DetectRegion(root);
 
             Debug.Log($"[OSMParser] Parsed {roads.Count} road segments, {buildings.Count} building footprints, " +
-                      $"and region '{region}' from '{filePath}'.");
-            return (roads, buildings, region);
+                      $"{waterBodies.Count} water bodies, and region '{region}' from '{filePath}'.");
+            return (roads, buildings, waterBodies, region);
         }
 
         /// <summary>
@@ -147,10 +159,11 @@ namespace TerraDrive.DataInversion
         /// <param name="cancellationToken">Optional cancellation token.</param>
         /// <returns>
         /// A tuple containing a list of <see cref="RoadSegment"/>s, a list of
-        /// <see cref="BuildingFootprint"/>s, and a <see cref="RegionType"/> derived from
-        /// the most common country code found on nodes in the file.
+        /// <see cref="BuildingFootprint"/>s, a list of <see cref="WaterBody"/>s, and a
+        /// <see cref="RegionType"/> derived from the most common country code found on
+        /// nodes in the file.
         /// </returns>
-        public static async Task<(List<RoadSegment> roads, List<BuildingFootprint> buildings, RegionType region)>
+        public static async Task<(List<RoadSegment> roads, List<BuildingFootprint> buildings, List<WaterBody> waterBodies, RegionType region)>
             ParseAsync(
                 string filePath,
                 double originLat,
@@ -196,8 +209,9 @@ namespace TerraDrive.DataInversion
                     CoordinateConverter.LatLonToUnity(lat, lon, originLat, originLon, elev);
             }
 
-            var roads     = new List<RoadSegment>();
-            var buildings = new List<BuildingFootprint>();
+            var roads       = new List<RoadSegment>();
+            var buildings   = new List<BuildingFootprint>();
+            var waterBodies = new List<WaterBody>();
 
             // ── Process ways ───────────────────────────────────────────────────────
             foreach (XElement way in root.Elements("way"))
@@ -226,14 +240,24 @@ namespace TerraDrive.DataInversion
                         Tags      = tags,
                     });
                 }
+                else if (nodeRefs.Count >= 3 && TryGetWaterType(tags, out string waterType))
+                {
+                    waterBodies.Add(new WaterBody
+                    {
+                        WayId     = wayId,
+                        Outline   = nodeRefs,
+                        Tags      = tags,
+                        WaterType = waterType,
+                    });
+                }
             }
 
             // ── Detect region from node country tags ───────────────────────────────
             RegionType region = DetectRegion(root);
 
             Debug.Log($"[OSMParser] Parsed {roads.Count} road segments, {buildings.Count} building footprints, " +
-                      $"and region '{region}' from '{filePath}' (with elevation).");
-            return (roads, buildings, region);
+                      $"{waterBodies.Count} water bodies, and region '{region}' from '{filePath}' (with elevation).");
+            return (roads, buildings, waterBodies, region);
         }
 
         // ── Private helpers ────────────────────────────────────────────────────
@@ -370,5 +394,48 @@ namespace TerraDrive.DataInversion
         private static bool IsBridgeWay(Dictionary<string, string> tags) =>
             tags.TryGetValue("bridge", out string bridgeValue) &&
             !string.Equals(bridgeValue, "no", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Returns <c>true</c> when <paramref name="tags"/> describe a closed-polygon
+        /// water feature, and sets <paramref name="waterType"/> to the detected sub-type.
+        ///
+        /// <para>Recognised tag combinations:</para>
+        /// <list type="bullet">
+        ///   <item><c>natural=water</c> — type taken from the <c>water</c> sub-tag (e.g.
+        ///     <c>"lake"</c>, <c>"pond"</c>); falls back to <c>"water"</c>.</item>
+        ///   <item><c>waterway=riverbank</c> or <c>waterway=dock</c> — polygon waterways.</item>
+        ///   <item><c>landuse=reservoir</c> — artificial water storage.</item>
+        /// </list>
+        /// </summary>
+        private static bool TryGetWaterType(Dictionary<string, string> tags, out string waterType)
+        {
+            if (tags.TryGetValue("natural", out string naturalVal) &&
+                string.Equals(naturalVal, "water", StringComparison.OrdinalIgnoreCase))
+            {
+                // Use the optional water=* sub-tag for a more specific type.
+                if (!tags.TryGetValue("water", out waterType) || string.IsNullOrEmpty(waterType))
+                    waterType = "water";
+                return true;
+            }
+
+            if (tags.TryGetValue("waterway", out string waterwayVal) &&
+                (string.Equals(waterwayVal, "riverbank", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(waterwayVal, "dock",      StringComparison.OrdinalIgnoreCase)))
+            {
+                waterType = string.Equals(waterwayVal, "riverbank", StringComparison.OrdinalIgnoreCase)
+                    ? "riverbank" : "dock";
+                return true;
+            }
+
+            if (tags.TryGetValue("landuse", out string landuseVal) &&
+                string.Equals(landuseVal, "reservoir", StringComparison.OrdinalIgnoreCase))
+            {
+                waterType = "reservoir";
+                return true;
+            }
+
+            waterType = string.Empty;
+            return false;
+        }
     }
 }

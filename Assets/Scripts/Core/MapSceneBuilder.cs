@@ -116,7 +116,7 @@ namespace TerraDrive.Core
             MapData map = task.Result;
             Debug.Log(
                 $"[MapSceneBuilder] Building level: {map.Roads.Count} roads, " +
-                $"{map.Buildings.Count} buildings.");
+                $"{map.Buildings.Count} buildings, {map.WaterBodies.Count} water bodies.");
 
             GameManager.Instance?.SetState(GameState.GeneratingLevel);
 
@@ -132,6 +132,12 @@ namespace TerraDrive.Core
             foreach (BuildingFootprint building in map.Buildings)
             {
                 BuildBuilding(building, map.Region);
+                yield return null;
+            }
+
+            foreach (WaterBody water in map.WaterBodies)
+            {
+                BuildWater(water, map.Region);
                 yield return null;
             }
 
@@ -212,6 +218,20 @@ namespace TerraDrive.Core
             roofGo.AddComponent<MeshFilter>().sharedMesh = result.RoofMesh;
             var roofRenderer = roofGo.AddComponent<MeshRenderer>();
             Registry?.ApplyTo(roofRenderer, result.RoofTextureId);
+        }
+
+        private void BuildWater(WaterBody water, RegionType region)
+        {
+            if (water.Outline == null || water.Outline.Count < 3)
+                return;
+
+            WaterMeshResult result = WaterMeshGenerator.Generate(water, region: region);
+
+            var go = new GameObject($"Water_{water.WayId}");
+            go.AddComponent<MeshFilter>().sharedMesh   = result.Mesh;
+            var renderer                               = go.AddComponent<MeshRenderer>();
+            Registry?.ApplyTo(renderer, result.TextureId);
+            go.layer = LayerMask.NameToLayer("Water");
         }
 
         private void PositionVehicle()

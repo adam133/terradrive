@@ -83,9 +83,9 @@ namespace TerraDrive.Core
             ElevationGrid elevationGrid = ElevationGrid.Load(elevationCsvPath);
 
             // Parse OSM data, using the elevation grid as the IElevationSource so that
-            // every road and building node's Y coordinate is lifted to match the terrain
-            // surface without issuing any additional network requests.
-            var (roads, buildings, region) = await OSMParser.ParseAsync(
+            // every road, building, and water body node's Y coordinate is lifted to match
+            // the terrain surface without issuing any additional network requests.
+            var (roads, buildings, waterBodies, region) = await OSMParser.ParseAsync(
                     osmPath, originLat, originLon, elevationGrid, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -93,7 +93,7 @@ namespace TerraDrive.Core
             TerrainMeshResult terrainMesh =
                 TerrainMeshGenerator.Generate(elevationGrid, originLat, originLon);
 
-            return new MapData(roads, buildings, region, terrainMesh, elevationGrid);
+            return new MapData(roads, buildings, waterBodies, region, terrainMesh, elevationGrid);
         }
     }
 }

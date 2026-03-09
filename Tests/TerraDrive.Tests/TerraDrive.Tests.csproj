@@ -20,6 +20,7 @@
     <Compile Include="../../Assets/Scripts/DataInversion/OSMParser.cs" />
     <Compile Include="../../Assets/Scripts/DataInversion/RegionType.cs" />
     <Compile Include="../../Assets/Scripts/DataInversion/RoadType.cs" />
+    <Compile Include="../../Assets/Scripts/DataInversion/WaterBody.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/BuildingGenerator.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/BuildingMeshResult.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/MaterialRegistry.cs" />
@@ -31,6 +32,8 @@
     <Compile Include="../../Assets/Scripts/Procedural/RoadSurfaceDeformer.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/BridgeElevator.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/RoadsidePropPlacer.cs" />
+    <Compile Include="../../Assets/Scripts/Procedural/WaterMeshGenerator.cs" />
+    <Compile Include="../../Assets/Scripts/Procedural/WaterMeshResult.cs" />
     <Compile Include="../../Assets/Scripts/Terrain/IElevationSource.cs" />
     <Compile Include="../../Assets/Scripts/Terrain/OpenElevationSource.cs" />
     <Compile Include="../../Assets/Scripts/Terrain/ElevationGrid.cs" />

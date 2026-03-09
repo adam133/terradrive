@@ -20,7 +20,6 @@ namespace TerraDrive.Tests
     {
         // ── Minimal test fixtures ─────────────────────────────────────────────
 
-        // A minimal .osm file with one road way (nodes 1–2) and one building (nodes 3–4).
         private const string MinimalOsm = """
             <?xml version='1.0'?>
             <osm version='0.6'>
@@ -35,6 +34,25 @@ namespace TerraDrive.Tests
               <way id='200'>
                 <nd ref='3'/><nd ref='4'/><nd ref='3'/>
                 <tag k='building' v='yes'/>
+              </way>
+            </osm>
+            """;
+
+        // OSM fixture that also contains a triangular water body (natural=water).
+        private const string OsmWithWater = """
+            <?xml version='1.0'?>
+            <osm version='0.6'>
+              <node id='1' lat='51.5000' lon='-0.1000'/>
+              <node id='2' lat='51.5010' lon='-0.1010'/>
+              <node id='3' lat='51.5000' lon='-0.1020'/>
+              <way id='100'>
+                <nd ref='1'/><nd ref='2'/>
+                <tag k='highway' v='primary'/>
+              </way>
+              <way id='300'>
+                <nd ref='1'/><nd ref='2'/><nd ref='3'/>
+                <tag k='natural' v='water'/>
+                <tag k='water' v='pond'/>
               </way>
             </osm>
             """;
@@ -251,6 +269,57 @@ namespace TerraDrive.Tests
                 Assert.ThrowsAsync<OperationCanceledException>(
                     async () => await MapLoader.LoadMapAsync(
                         osm, csv, OriginLat, OriginLon, cts.Token));
+            }
+            finally { DeleteFile(osm); DeleteFile(csv); }
+        }
+
+        // ── Water bodies ──────────────────────────────────────────────────────
+
+        [Test]
+        public async Task LoadMapAsync_PopulatesWaterBodies()
+        {
+            string osm = WriteTempFile(OsmWithWater, ".osm");
+            string csv = WriteTempFile(MinimalElevationCsv, ".elevation.csv");
+            try
+            {
+                MapData data = await MapLoader.LoadMapAsync(osm, csv, OriginLat, OriginLon);
+
+                Assert.That(data.WaterBodies.Count, Is.EqualTo(1));
+                Assert.That(data.WaterBodies[0].WaterType, Is.EqualTo("pond"));
+            }
+            finally { DeleteFile(osm); DeleteFile(csv); }
+        }
+
+        [Test]
+        public async Task LoadMapAsync_WaterBodyNodes_HaveElevationApplied()
+        {
+            string osm = WriteTempFile(OsmWithWater, ".osm");
+            string csv = WriteTempFile(MinimalElevationCsv, ".elevation.csv");
+            try
+            {
+                MapData data = await MapLoader.LoadMapAsync(osm, csv, OriginLat, OriginLon);
+
+                // All grid elevations are positive (5–20 m), so every outline node's Y
+                // should be lifted above zero.
+                foreach (var water in data.WaterBodies)
+                    foreach (var node in water.Outline)
+                        Assert.That(node.y, Is.GreaterThan(0.0f),
+                            "Expected water body outline Y to be lifted to terrain elevation");
+            }
+            finally { DeleteFile(osm); DeleteFile(csv); }
+        }
+
+        [Test]
+        public async Task LoadMapAsync_OsmWithNoWater_WaterBodiesIsEmpty()
+        {
+            string osm = WriteTempFile(MinimalOsm, ".osm");
+            string csv = WriteTempFile(MinimalElevationCsv, ".elevation.csv");
+            try
+            {
+                MapData data = await MapLoader.LoadMapAsync(osm, csv, OriginLat, OriginLon);
+
+                Assert.That(data.WaterBodies, Is.Not.Null);
+                Assert.That(data.WaterBodies.Count, Is.EqualTo(0));
             }
             finally { DeleteFile(osm); DeleteFile(csv); }
         }

@@ -119,6 +119,24 @@ namespace TerraDrive.Procedural
             };
         }
 
+        // ── Water surface ──────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Returns the texture identifier for water surfaces appropriate to the given
+        /// climate region.
+        /// </summary>
+        /// <param name="region">Climate zone of the map area.</param>
+        /// <returns>A lowercase underscore-separated texture asset name.</returns>
+        public static string GetWaterTextureId(RegionType region)
+        {
+            return region switch
+            {
+                RegionType.Arctic        => "water_arctic",
+                RegionType.Tropical      => "water_tropical",
+                _                        => "water",
+            };
+        }
+
         // ── Private helpers ────────────────────────────────────────────────────
 
         /// <summary>
