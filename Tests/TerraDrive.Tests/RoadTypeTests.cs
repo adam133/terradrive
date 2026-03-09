@@ -95,5 +95,59 @@ namespace TerraDrive.Tests
             RoadType defaultType = default;
             Assert.That(defaultType, Is.EqualTo(RoadType.Unknown));
         }
+
+        // ── RoadTypeParser.Parse ───────────────────────────────────────────────
+
+        [TestCase("motorway",        RoadType.Motorway)]
+        [TestCase("motorway_link",   RoadType.Motorway)]
+        [TestCase("trunk",           RoadType.Trunk)]
+        [TestCase("trunk_link",      RoadType.Trunk)]
+        [TestCase("primary",         RoadType.Primary)]
+        [TestCase("primary_link",    RoadType.Primary)]
+        [TestCase("secondary",       RoadType.Secondary)]
+        [TestCase("secondary_link",  RoadType.Secondary)]
+        [TestCase("tertiary",        RoadType.Tertiary)]
+        [TestCase("tertiary_link",   RoadType.Tertiary)]
+        [TestCase("residential",     RoadType.Residential)]
+        [TestCase("living_street",   RoadType.Residential)]
+        [TestCase("service",         RoadType.Service)]
+        [TestCase("track",           RoadType.Dirt)]
+        [TestCase("dirt_road",       RoadType.Dirt)]
+        [TestCase("path",            RoadType.Path)]
+        [TestCase("footway",         RoadType.Path)]
+        [TestCase("steps",           RoadType.Path)]
+        [TestCase("cycleway",        RoadType.Cycleway)]
+        public void RoadTypeParser_Parse_KnownTag_ReturnsExpected(
+            string tag, RoadType expected)
+        {
+            Assert.That(RoadTypeParser.Parse(tag), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void RoadTypeParser_Parse_UnknownTag_ReturnsResidential()
+        {
+            Assert.That(RoadTypeParser.Parse("pedestrian"), Is.EqualTo(RoadType.Residential));
+        }
+
+        [Test]
+        public void RoadTypeParser_Parse_NullTag_ReturnsResidential()
+        {
+            Assert.That(RoadTypeParser.Parse(null), Is.EqualTo(RoadType.Residential));
+        }
+
+        [Test]
+        public void RoadTypeParser_Parse_EmptyTag_ReturnsResidential()
+        {
+            Assert.That(RoadTypeParser.Parse(string.Empty), Is.EqualTo(RoadType.Residential));
+        }
+
+        [Test]
+        public void RoadTypeParser_Parse_IsCaseInsensitive()
+        {
+            Assert.That(RoadTypeParser.Parse("MOTORWAY"),  Is.EqualTo(RoadType.Motorway));
+            Assert.That(RoadTypeParser.Parse("Primary"),   Is.EqualTo(RoadType.Primary));
+            Assert.That(RoadTypeParser.Parse("SECONDARY"), Is.EqualTo(RoadType.Secondary));
+        }
     }
 }
+

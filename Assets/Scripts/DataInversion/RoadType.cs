@@ -38,4 +38,47 @@ namespace TerraDrive.DataInversion
         /// <summary>Dedicated cycle lane (OSM: <c>cycleway</c>).</summary>
         Cycleway,
     }
+
+    /// <summary>
+    /// Maps OSM <c>highway</c> tag values to <see cref="RoadType"/> enum members.
+    ///
+    /// Used by <c>MapSceneBuilder</c> to convert the raw tag string stored on a
+    /// <c>RoadSegment</c> into a typed enum before passing it to the mesh generators.
+    /// </summary>
+    public static class RoadTypeParser
+    {
+        /// <summary>
+        /// Returns the <see cref="RoadType"/> corresponding to the OSM <c>highway</c>
+        /// tag value <paramref name="highwayTag"/>.
+        ///
+        /// <para>
+        /// Link variants (e.g. <c>motorway_link</c>, <c>primary_link</c>) map to the
+        /// same type as their parent class.  Unrecognised values fall back to
+        /// <see cref="RoadType.Residential"/>.
+        /// </para>
+        /// </summary>
+        /// <param name="highwayTag">
+        /// OSM <c>highway</c> tag value (e.g. <c>"primary"</c>, <c>"motorway_link"</c>).
+        /// <c>null</c> is treated as unrecognised.
+        /// </param>
+        /// <returns>
+        /// The matching <see cref="RoadType"/>, or <see cref="RoadType.Residential"/>
+        /// when the value is not recognised.
+        /// </returns>
+        public static RoadType Parse(string? highwayTag) =>
+            highwayTag?.ToLowerInvariant() switch
+            {
+                "motorway"   or "motorway_link"    => RoadType.Motorway,
+                "trunk"      or "trunk_link"       => RoadType.Trunk,
+                "primary"    or "primary_link"     => RoadType.Primary,
+                "secondary"  or "secondary_link"   => RoadType.Secondary,
+                "tertiary"   or "tertiary_link"    => RoadType.Tertiary,
+                "residential" or "living_street"   => RoadType.Residential,
+                "service"                          => RoadType.Service,
+                "track"      or "dirt_road"        => RoadType.Dirt,
+                "path"       or "footway" or "steps" => RoadType.Path,
+                "cycleway"                         => RoadType.Cycleway,
+                _                                  => RoadType.Residential,
+            };
+    }
 }

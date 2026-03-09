@@ -98,9 +98,9 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 
 - [x] Implement `GameManager` singleton with a `GameState` enum (`MainMenu`, `LoadingMap`, `GeneratingLevel`, `Racing`, `Paused`, `Results`).
 - [x] Expose `OnStateChanged` events so subsystems can react without tight coupling.
-- [ ] Connect `GameManager` state transitions to the OSM loading and procedural generation pipeline.
+- [x] Connect `GameManager` state transitions to the OSM loading and procedural generation pipeline via `MapSceneBuilder`.
 - [ ] Implement an in-editor **TerraDrive → Load OSM File / Generate Level** menu item.
-- See [`Assets/Scripts/Core/GameManager.cs`](Assets/Scripts/Core/GameManager.cs).
+- See [`Assets/Scripts/Core/GameManager.cs`](Assets/Scripts/Core/GameManager.cs) and [`Assets/Scripts/Core/MapSceneBuilder.cs`](Assets/Scripts/Core/MapSceneBuilder.cs).
 
 ### Phase 6 — Vehicle Physics ✅
 
