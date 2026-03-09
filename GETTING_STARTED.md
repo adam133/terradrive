@@ -284,8 +284,9 @@ Run the produced binary to play the game outside the editor.
 | CLI project create + configure (batch mode) | ✅ Working — `ProjectSetup.Configure` via `-executeMethod` |
 | Automated release builds (CI/CD) | ✅ Working — push to `release` branch triggers `release.yml` |
 | Texture ID → Material wiring | ✅ Working — `MaterialRegistry` scene component + `ProofOfConcept.unity` with all 25 texture slots |
+| Speedometer HUD + minimap renderer | ⚠️ Partial — `SpeedometerHud` (reads vehicle speed → MPH) and `MinimapRenderer` (road segments → minimap lines) exist; in-scene canvas overlay is planned |
 | Prefab selection per region kit | 🔲 Planned |
-| Race logic, checkpoints, HUD | 🔲 Planned |
+| Race logic, checkpoints, HUD overlay | 🔲 Planned |
 | AI opponents | 🔲 Planned |
 
 For the full roadmap see the [main README](README.md#phased-implementation-plan).
