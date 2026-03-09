@@ -93,5 +93,21 @@ namespace TerraDrive.Core
             CurrentState = newState;
             OnStateChanged.Invoke(newState);
         }
+
+        /// <summary>
+        /// Updates the map origin to the given GPS coordinates.
+        ///
+        /// Call this after a successful
+        /// <see cref="Core.LocationMenuController.LoadLocationAsync"/> to keep the
+        /// <see cref="GameManager"/> in sync with the loaded map.
+        /// </summary>
+        /// <param name="latitude">New origin latitude in decimal degrees (WGS-84).</param>
+        /// <param name="longitude">New origin longitude in decimal degrees (WGS-84).</param>
+        public void SetLocation(double latitude, double longitude)
+        {
+            OriginLatitude  = latitude;
+            OriginLongitude = longitude;
+            Debug.Log($"[GameManager] Location updated to ({latitude:F6}, {longitude:F6}).");
+        }
     }
 }

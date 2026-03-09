@@ -21,7 +21,7 @@ namespace TerraDrive.Tools
     ///   OsmDownloader.SaveOsm(xml, "Assets/Data/london.osm");
     /// </code>
     /// </summary>
-    public class OsmDownloader
+    public class OsmDownloader : IOsmDownloader
     {
         /// <summary>Default Overpass API endpoint.</summary>
         public const string DefaultOverpassUrl = "https://overpass-api.de/api/interpreter";
