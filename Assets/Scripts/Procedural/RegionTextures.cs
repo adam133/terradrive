@@ -119,6 +119,22 @@ namespace TerraDrive.Procedural
             };
         }
 
+        // ── Lane markings ──────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Returns the texture identifier for the lane-marking overlay (UV channel 1
+        /// on the road surface mesh).
+        /// </summary>
+        /// <param name="isOneWay">
+        /// <c>true</c> for a one-way road (no opposing-traffic centre line);
+        /// <c>false</c> for a bidirectional road (centre line separates directions).
+        /// </param>
+        /// <returns>
+        /// <c>"lane_marking_oneway"</c> or <c>"lane_marking_twoway"</c>.
+        /// </returns>
+        public static string GetLaneMarkingTextureId(bool isOneWay) =>
+            isOneWay ? "lane_marking_oneway" : "lane_marking_twoway";
+
         // ── Water surface ──────────────────────────────────────────────────────
 
         /// <summary>

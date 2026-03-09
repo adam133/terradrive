@@ -175,7 +175,9 @@ namespace TerraDrive.Core
 
             RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(
                 spline, roadType, region: region,
-                surfaceSeed: (int)(road.WayId & int.MaxValue));
+                surfaceSeed: (int)(road.WayId & int.MaxValue),
+                lanes: road.Lanes,
+                isOneWay: road.IsOneWay);
 
             var parent = new GameObject($"Road_{road.WayId}");
 
