@@ -219,6 +219,150 @@ namespace TerraDrive.Tests
                 () => source.FetchElevationsAsync(locations, cts.Token));
         }
 
+        // ── Retry on 429 ─────────────────────────────────────────────────────
+
+        [Test]
+        public async Task FetchElevationsAsync_429ThenSuccess_RetriesAndReturnsElevations()
+        {
+            const string responseBody = """
+                {
+                    "results": [
+                        { "latitude": 0.0, "longitude": 0.0, "elevation": 42.0 }
+                    ]
+                }
+                """;
+
+            int callCount = 0;
+            var handler = new StubHttpMessageHandler(_ =>
+            {
+                callCount++;
+                if (callCount == 1)
+                    return new HttpResponseMessage((HttpStatusCode)429);
+
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(responseBody, Encoding.UTF8, "application/json"),
+                };
+            });
+
+            var source = new InstantRetryOpenElevationSource(new HttpClient(handler));
+            var locations = new[] { (0.0, 0.0) };
+
+            IReadOnlyList<double> elevations = await source.FetchElevationsAsync(locations);
+
+            Assert.That(elevations.Count, Is.EqualTo(1));
+            Assert.That(elevations[0], Is.EqualTo(42.0));
+            Assert.That(callCount, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void FetchElevationsAsync_AllRetriesExhausted_ThrowsHttpRequestException()
+        {
+            var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage((HttpStatusCode)429));
+
+            var source = new InstantRetryOpenElevationSource(new HttpClient(handler));
+            var locations = new[] { (0.0, 0.0) };
+
+            Assert.ThrowsAsync<HttpRequestException>(
+                () => source.FetchElevationsAsync(locations));
+        }
+
+        [Test]
+        public async Task FetchElevationsAsync_RetryAfterHeader_IsRespected()
+        {
+            const string responseBody = """
+                { "results": [{ "latitude": 0.0, "longitude": 0.0, "elevation": 5.0 }] }
+                """;
+
+            int callCount = 0;
+            double? observedDelay = null;
+
+            var handler = new StubHttpMessageHandler(_ =>
+            {
+                callCount++;
+                if (callCount == 1)
+                {
+                    var r429 = new HttpResponseMessage((HttpStatusCode)429);
+                    r429.Headers.Add("Retry-After", "15");
+                    return r429;
+                }
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(responseBody, Encoding.UTF8, "application/json"),
+                };
+            });
+
+            var source = new CapturingRetryOpenElevationSource(
+                new HttpClient(handler), d => observedDelay = d);
+            var locations = new[] { (0.0, 0.0) };
+
+            await source.FetchElevationsAsync(locations);
+
+            Assert.That(observedDelay, Is.EqualTo(15.0));
+        }
+
+        [Test]
+        public async Task FetchElevationsAsync_NoRetryAfterHeader_UsesFixedDelay()
+        {
+            const string responseBody = """
+                { "results": [{ "latitude": 0.0, "longitude": 0.0, "elevation": 5.0 }] }
+                """;
+
+            int callCount = 0;
+            double? observedDelay = null;
+
+            var handler = new StubHttpMessageHandler(_ =>
+            {
+                callCount++;
+                if (callCount == 1)
+                    return new HttpResponseMessage((HttpStatusCode)429);
+
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(responseBody, Encoding.UTF8, "application/json"),
+                };
+            });
+
+            var source = new CapturingRetryOpenElevationSource(
+                new HttpClient(handler), d => observedDelay = d);
+            var locations = new[] { (0.0, 0.0) };
+
+            await source.FetchElevationsAsync(locations);
+
+            Assert.That(observedDelay, Is.EqualTo(OpenElevationSource.RetryDelaySeconds));
+        }
+
+        [Test]
+        public void FetchElevationsAsync_Non429Error_RaisesImmediately()
+        {
+            int callCount = 0;
+            var handler = new StubHttpMessageHandler(_ =>
+            {
+                callCount++;
+                return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+            });
+
+            var source = new InstantRetryOpenElevationSource(new HttpClient(handler));
+            var locations = new[] { (0.0, 0.0) };
+
+            Assert.ThrowsAsync<HttpRequestException>(
+                () => source.FetchElevationsAsync(locations));
+
+            Assert.That(callCount, Is.EqualTo(1), "Non-429 errors must not be retried.");
+        }
+
+        [Test]
+        public void MaxRetries_IsAtLeast60()
+        {
+            Assert.That(OpenElevationSource.MaxRetries, Is.GreaterThanOrEqualTo(60));
+        }
+
+        [Test]
+        public void RetryDelaySeconds_IsAtLeastTwo()
+        {
+            Assert.That(OpenElevationSource.RetryDelaySeconds, Is.GreaterThanOrEqualTo(2.0));
+        }
+
         [Test]
         public void Constructor_NullHttpClient_ThrowsArgumentNullException()
         {
@@ -255,6 +399,33 @@ namespace TerraDrive.Tests
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 return Task.FromResult(_handler(request));
+            }
+        }
+
+        // OpenElevationSource subclass that skips actual Task.Delay (tests run instantly) ──
+
+        private sealed class InstantRetryOpenElevationSource : OpenElevationSource
+        {
+            public InstantRetryOpenElevationSource(HttpClient client)
+                : base(client, DefaultBaseUrl) { }
+
+            protected override Task WaitAsync(double seconds, CancellationToken ct) =>
+                Task.CompletedTask;
+        }
+
+        // OpenElevationSource subclass that captures the computed delay value ────────────
+
+        private sealed class CapturingRetryOpenElevationSource : OpenElevationSource
+        {
+            private readonly Action<double> _onDelay;
+
+            public CapturingRetryOpenElevationSource(HttpClient client, Action<double> onDelay)
+                : base(client, DefaultBaseUrl) => _onDelay = onDelay;
+
+            protected override Task WaitAsync(double seconds, CancellationToken ct)
+            {
+                _onDelay(seconds);
+                return Task.CompletedTask;
             }
         }
     }

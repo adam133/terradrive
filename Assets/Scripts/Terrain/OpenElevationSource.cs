@@ -54,10 +54,16 @@ namespace TerraDrive.Terrain
     ///       new[] { (51.5074, -0.1278), (48.8566, 2.3522) });
     /// </code>
     /// </summary>
-    public sealed class OpenElevationSource : IElevationSource
+    public class OpenElevationSource : IElevationSource
     {
         /// <summary>Public Open-Elevation API endpoint.</summary>
         public const string DefaultBaseUrl = "https://api.open-elevation.com/api/v1/lookup";
+
+        /// <summary>Maximum number of retry attempts on HTTP 429 responses.</summary>
+        internal const int MaxRetries = 60;
+
+        /// <summary>Fixed delay in seconds between retry attempts when no <c>Retry-After</c> header is present.</summary>
+        internal const double RetryDelaySeconds = 2.0;
 
         private readonly HttpClient _httpClient;
         private readonly string _baseUrl;
@@ -105,20 +111,57 @@ namespace TerraDrive.Terrain
             if (locations.Count == 0) return Array.Empty<double>();
 
             string requestJson = BuildRequestJson(locations);
-            using var content  = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
-            HttpResponseMessage response =
-                await _httpClient.PostAsync(_baseUrl, content, cancellationToken)
-                                 .ConfigureAwait(false);
+            for (int attempt = 0; attempt <= MaxRetries; attempt++)
+            {
+                using var content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
-            response.EnsureSuccessStatusCode();
+                HttpResponseMessage response =
+                    await _httpClient.PostAsync(_baseUrl, content, cancellationToken)
+                                     .ConfigureAwait(false);
 
-            string responseBody =
-                await response.Content.ReadAsStringAsync(cancellationToken)
-                              .ConfigureAwait(false);
+                if ((int)response.StatusCode == 429)
+                {
+                    if (attempt == MaxRetries)
+                        response.EnsureSuccessStatusCode(); // always throws for 4xx/5xx
 
-            return ParseResponseJson(responseBody, locations.Count);
+                    double delay = RetryDelaySeconds;
+
+                    if (response.Headers.TryGetValues("Retry-After", out IEnumerable<string>? values))
+                    {
+                        string raw = string.Join(",", values);
+                        if (double.TryParse(raw, NumberStyles.Any,
+                                            CultureInfo.InvariantCulture, out double parsed))
+                            delay = parsed;
+                    }
+
+                    Console.WriteLine(
+                        $"Rate limited (429). Retrying in {delay:F0}s " +
+                        $"(attempt {attempt + 1}/{MaxRetries})...");
+
+                    await WaitAsync(delay, cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+
+                response.EnsureSuccessStatusCode();
+
+                string responseBody =
+                    await response.Content.ReadAsStringAsync(cancellationToken)
+                                  .ConfigureAwait(false);
+
+                return ParseResponseJson(responseBody, locations.Count);
+            }
+
+            // Unreachable: the loop always returns or throws before exhausting retries.
+            throw new InvalidOperationException("Retry loop exhausted without returning or throwing.");
         }
+
+        /// <summary>
+        /// Delays for the given number of seconds before the next retry attempt.
+        /// Override in tests to skip actual waiting.
+        /// </summary>
+        protected virtual Task WaitAsync(double seconds, CancellationToken cancellationToken) =>
+            Task.Delay(TimeSpan.FromSeconds(seconds), cancellationToken);
 
         // ── Internal helpers (internal so unit tests can exercise them directly) ──
 
