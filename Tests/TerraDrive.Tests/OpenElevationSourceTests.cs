@@ -348,7 +348,87 @@ namespace TerraDrive.Tests
             Assert.ThrowsAsync<HttpRequestException>(
                 () => source.FetchElevationsAsync(locations));
 
-            Assert.That(callCount, Is.EqualTo(1), "Non-429 errors must not be retried.");
+            Assert.That(callCount, Is.EqualTo(1), "Non-retryable errors must not be retried.");
+        }
+
+        // ── Retry on 504 ─────────────────────────────────────────────────────
+
+        [Test]
+        public async Task FetchElevationsAsync_504ThenSuccess_RetriesAndReturnsElevations()
+        {
+            const string responseBody = """
+                {
+                    "results": [
+                        { "latitude": 0.0, "longitude": 0.0, "elevation": 99.0 }
+                    ]
+                }
+                """;
+
+            int callCount = 0;
+            var handler = new StubHttpMessageHandler(_ =>
+            {
+                callCount++;
+                if (callCount == 1)
+                    return new HttpResponseMessage(HttpStatusCode.GatewayTimeout);
+
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(responseBody, Encoding.UTF8, "application/json"),
+                };
+            });
+
+            var source = new InstantRetryOpenElevationSource(new HttpClient(handler));
+            var locations = new[] { (0.0, 0.0) };
+
+            IReadOnlyList<double> elevations = await source.FetchElevationsAsync(locations);
+
+            Assert.That(elevations.Count, Is.EqualTo(1));
+            Assert.That(elevations[0], Is.EqualTo(99.0));
+            Assert.That(callCount, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void FetchElevationsAsync_504AllRetriesExhausted_ThrowsHttpRequestException()
+        {
+            var handler = new StubHttpMessageHandler(_ =>
+                new HttpResponseMessage(HttpStatusCode.GatewayTimeout));
+
+            var source = new InstantRetryOpenElevationSource(new HttpClient(handler));
+            var locations = new[] { (0.0, 0.0) };
+
+            Assert.ThrowsAsync<HttpRequestException>(
+                () => source.FetchElevationsAsync(locations));
+        }
+
+        [Test]
+        public async Task FetchElevationsAsync_504UsesFixedDelay()
+        {
+            const string responseBody = """
+                { "results": [{ "latitude": 0.0, "longitude": 0.0, "elevation": 5.0 }] }
+                """;
+
+            int callCount = 0;
+            double? observedDelay = null;
+
+            var handler = new StubHttpMessageHandler(_ =>
+            {
+                callCount++;
+                if (callCount == 1)
+                    return new HttpResponseMessage(HttpStatusCode.GatewayTimeout);
+
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(responseBody, Encoding.UTF8, "application/json"),
+                };
+            });
+
+            var source = new CapturingRetryOpenElevationSource(
+                new HttpClient(handler), d => observedDelay = d);
+            var locations = new[] { (0.0, 0.0) };
+
+            await source.FetchElevationsAsync(locations);
+
+            Assert.That(observedDelay, Is.EqualTo(OpenElevationSource.RetryDelaySeconds));
         }
 
         [Test]

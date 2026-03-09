@@ -120,7 +120,8 @@ namespace TerraDrive.Terrain
                     await _httpClient.PostAsync(_baseUrl, content, cancellationToken)
                                      .ConfigureAwait(false);
 
-                if ((int)response.StatusCode == 429)
+                int statusCode = (int)response.StatusCode;
+                if (statusCode == 429 || statusCode == 504)
                 {
                     if (attempt == MaxRetries)
                         response.EnsureSuccessStatusCode(); // always throws for 4xx/5xx
@@ -136,7 +137,7 @@ namespace TerraDrive.Terrain
                     }
 
                     Console.WriteLine(
-                        $"Rate limited (429). Retrying in {delay:F0}s " +
+                        $"HTTP {statusCode} received. Retrying in {delay:F0}s " +
                         $"(attempt {attempt + 1}/{MaxRetries})...");
 
                     await WaitAsync(delay, cancellationToken).ConfigureAwait(false);
