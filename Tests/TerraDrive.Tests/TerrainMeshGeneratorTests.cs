@@ -211,7 +211,79 @@ namespace TerraDrive.Tests
             var source = new LambdaElevationSource(_ => throw new OperationCanceledException());
 
             Assert.ThrowsAsync<OperationCanceledException>(
-                () => ElevationGrid.SampleAsync(0.0, 1.0, 0.0, 1.0, 2, 2, source, cts.Token));
+                () => ElevationGrid.SampleAsync(0.0, 1.0, 0.0, 1.0, 2, 2, source, cancellationToken: cts.Token));
+        }
+
+        [Test]
+        public void ElevationGrid_SampleAsync_ZeroBatchSize_ThrowsArgumentOutOfRangeException()
+        {
+            var source = new LambdaElevationSource(_ =>
+                Task.FromResult<IReadOnlyList<double>>(Array.Empty<double>()));
+
+            Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+                () => ElevationGrid.SampleAsync(0.0, 1.0, 0.0, 1.0, 2, 2, source, batchSize: 0));
+        }
+
+        [Test]
+        public async Task ElevationGrid_SampleAsync_BatchingWhenPointsExceedBatchSize_SplitsRequests()
+        {
+            // 3×4 = 12 points, batch size 5 → 3 calls (5+5+2)
+            var batchSizes = new List<int>();
+            var source = new LambdaElevationSource(locations =>
+            {
+                batchSizes.Add(locations.Count);
+                return Task.FromResult<IReadOnlyList<double>>(new double[locations.Count]);
+            });
+
+            await ElevationGrid.SampleAsync(0.0, 1.0, 0.0, 1.0, rows: 3, cols: 4, source, batchSize: 5);
+
+            Assert.That(batchSizes.Count, Is.EqualTo(3), "12 points ÷ batch size 5 → 3 calls.");
+            Assert.That(batchSizes[0], Is.EqualTo(5));
+            Assert.That(batchSizes[1], Is.EqualTo(5));
+            Assert.That(batchSizes[2], Is.EqualTo(2));
+        }
+
+        [Test]
+        public async Task ElevationGrid_SampleAsync_BatchedResult_MatchesUnbatchedResult()
+        {
+            // Same elevation values regardless of how they are split across batches.
+            double[] expectedValues = { 10, 20, 30, 40, 50, 60 }; // 2×3 grid
+            int callIndex = 0;
+
+            var source = new LambdaElevationSource(locations =>
+            {
+                var result = new double[locations.Count];
+                for (int i = 0; i < locations.Count; i++)
+                    result[i] = expectedValues[callIndex++];
+                return Task.FromResult<IReadOnlyList<double>>(result);
+            });
+
+            ElevationGrid grid = await ElevationGrid.SampleAsync(
+                0.0, 1.0, 0.0, 1.0, rows: 2, cols: 3, source, batchSize: 4);
+
+            // Verify all six values were stored in the correct row-major positions.
+            Assert.That(grid[0, 0], Is.EqualTo(10));
+            Assert.That(grid[0, 1], Is.EqualTo(20));
+            Assert.That(grid[0, 2], Is.EqualTo(30));
+            Assert.That(grid[1, 0], Is.EqualTo(40));
+            Assert.That(grid[1, 1], Is.EqualTo(50));
+            Assert.That(grid[1, 2], Is.EqualTo(60));
+        }
+
+        [Test]
+        public async Task ElevationGrid_SampleAsync_BatchSizeExactlyMatchesTotal_UsesSingleCall()
+        {
+            // batchSize == rows*cols → should still use exactly one call.
+            int callCount = 0;
+            var source = new LambdaElevationSource(locations =>
+            {
+                callCount++;
+                return Task.FromResult<IReadOnlyList<double>>(new double[locations.Count]);
+            });
+
+            await ElevationGrid.SampleAsync(0.0, 1.0, 0.0, 1.0, rows: 2, cols: 3, source, batchSize: 6);
+
+            Assert.That(callCount, Is.EqualTo(1));
         }
 
         // ── TerrainMeshGenerator.Generate — vertex counts ─────────────────────

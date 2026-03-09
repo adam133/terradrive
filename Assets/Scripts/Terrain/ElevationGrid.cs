@@ -163,9 +163,13 @@ namespace TerraDrive.Terrain
         /// <paramref name="elevationSource"/> and returns the results as an
         /// <see cref="ElevationGrid"/>.
         ///
+        /// <para>
         /// Points are sampled in row-major order (all columns of row 0 first, then row 1,
-        /// etc.) so they can be passed directly to
-        /// <see cref="IElevationSource.FetchElevationsAsync"/> as a single batch.
+        /// etc.).  When the total number of grid points exceeds <paramref name="batchSize"/>,
+        /// requests are split into multiple calls of at most <paramref name="batchSize"/> points
+        /// each, allowing large high-resolution grids to be fetched without exceeding the
+        /// Open-Elevation API's practical per-request limit.
+        /// </para>
         /// </summary>
         /// <param name="minLat">Southern boundary (decimal degrees).</param>
         /// <param name="maxLat">Northern boundary; must be &gt; <paramref name="minLat"/>.</param>
@@ -174,6 +178,12 @@ namespace TerraDrive.Terrain
         /// <param name="rows">Number of latitude samples (≥ 2).</param>
         /// <param name="cols">Number of longitude samples (≥ 2).</param>
         /// <param name="elevationSource">DEM data source used to fetch elevation values.</param>
+        /// <param name="batchSize">
+        /// Maximum number of locations sent to the elevation source in a single call.
+        /// When the grid contains more points than this limit, multiple calls are made
+        /// and their results concatenated.  Defaults to 512, which fits comfortably within
+        /// the Open-Elevation public API's recommended request size.
+        /// </param>
         /// <param name="cancellationToken">Optional cancellation token.</param>
         /// <returns>
         /// An <see cref="ElevationGrid"/> whose values are populated from the elevation source.
@@ -183,6 +193,7 @@ namespace TerraDrive.Terrain
             double minLon, double maxLon,
             int rows, int cols,
             IElevationSource elevationSource,
+            int batchSize = 512,
             CancellationToken cancellationToken = default)
         {
             if (elevationSource == null)
@@ -191,6 +202,8 @@ namespace TerraDrive.Terrain
                 throw new ArgumentOutOfRangeException(nameof(rows), "Grid must have at least 2 rows.");
             if (cols < 2)
                 throw new ArgumentOutOfRangeException(nameof(cols), "Grid must have at least 2 columns.");
+            if (batchSize < 1)
+                throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size must be at least 1.");
 
             // Build ordered flat list of locations (row-major: all cols of row 0, then row 1…)
             var locations = new List<(double lat, double lon)>(rows * cols);
@@ -204,15 +217,26 @@ namespace TerraDrive.Terrain
                 }
             }
 
-            IReadOnlyList<double> elevations =
-                await elevationSource.FetchElevationsAsync(locations, cancellationToken)
-                                     .ConfigureAwait(false);
+            // Fetch elevations in batches to stay within the API's practical request size.
+            var allElevations = new double[locations.Count];
+            int fetched = 0;
+            while (fetched < locations.Count)
+            {
+                int count = Math.Min(batchSize, locations.Count - fetched);
+                var batch = locations.GetRange(fetched, count);
+                IReadOnlyList<double> batchResult =
+                    await elevationSource.FetchElevationsAsync(batch, cancellationToken)
+                                         .ConfigureAwait(false);
+                for (int i = 0; i < count; i++)
+                    allElevations[fetched + i] = batchResult[i];
+                fetched += count;
+            }
 
             var grid = new double[rows, cols];
             int idx = 0;
             for (int r = 0; r < rows; r++)
                 for (int c = 0; c < cols; c++)
-                    grid[r, c] = elevations[idx++];
+                    grid[r, c] = allElevations[idx++];
 
             return new ElevationGrid(minLat, maxLat, minLon, maxLon, grid);
         }

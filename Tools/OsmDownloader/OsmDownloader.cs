@@ -32,6 +32,12 @@ namespace TerraDrive.Tools
         /// <summary>Base delay in seconds for exponential backoff: delay = BackoffBase * 2^attempt.</summary>
         internal const double BackoffBase = 2.0;
 
+        /// <summary>
+        /// Horizontal posting interval of SRTM (Shuttle Radar Topography Mission) data in metres.
+        /// Used as the default target sample spacing when auto-computing elevation grid dimensions.
+        /// </summary>
+        public const double SrtmSpacingMetres = 30.0;
+
         private static readonly string QueryTemplate = string.Join("\n",
             "[out:xml][timeout:90];",
             "(",
@@ -204,9 +210,60 @@ namespace TerraDrive.Tools
         }
 
         /// <summary>
+        /// Computes the number of rows and columns needed to sample a bounding box at
+        /// approximately <paramref name="spacingMetres"/> metres between adjacent samples.
+        ///
+        /// <para>
+        /// The returned dimensions are the minimum values ≥ 2 that produce a sample spacing
+        /// no coarser than <paramref name="spacingMetres"/> in both the latitude and longitude
+        /// directions.  Pass <see cref="SrtmSpacingMetres"/> (30 m) to match the native
+        /// resolution of SRTM data served by the Open-Elevation API.
+        /// </para>
+        /// </summary>
+        /// <param name="minLat">Southern boundary (decimal degrees).</param>
+        /// <param name="maxLat">Northern boundary (decimal degrees).</param>
+        /// <param name="minLon">Western boundary (decimal degrees).</param>
+        /// <param name="maxLon">Eastern boundary (decimal degrees).</param>
+        /// <param name="spacingMetres">
+        /// Desired sample spacing in metres.  Defaults to <see cref="SrtmSpacingMetres"/>.
+        /// </param>
+        /// <returns>
+        /// A <c>(rows, cols)</c> tuple where each value is at least 2.
+        /// </returns>
+        public static (int rows, int cols) ComputeGridDimensions(
+            double minLat, double maxLat,
+            double minLon, double maxLon,
+            double spacingMetres = SrtmSpacingMetres)
+        {
+            const double MetresPerDegree = 111_111.0;
+            double midLat       = (minLat + maxLat) / 2.0;
+            double latSpanM     = (maxLat - minLat) * MetresPerDegree;
+            double lonSpanM     = (maxLon - minLon) * MetresPerDegree
+                                  * Math.Cos(midLat * Math.PI / 180.0);
+            int rows = Math.Max(2, (int)Math.Round(latSpanM / spacingMetres) + 1);
+            int cols = Math.Max(2, (int)Math.Round(lonSpanM / spacingMetres) + 1);
+            return (rows, cols);
+        }
+
+        /// <summary>
         /// Downloads a regular elevation grid for the bounding box that encloses the
         /// given centre coordinate and radius, using the Open-Elevation API (SRTM 30 m
         /// data) by default.
+        ///
+        /// <para>
+        /// When <paramref name="rows"/> or <paramref name="cols"/> is zero (the default),
+        /// the grid dimensions are computed automatically via
+        /// <see cref="ComputeGridDimensions"/> so that adjacent samples are spaced
+        /// approximately <paramref name="targetSpacingMetres"/> metres apart — matching
+        /// the native 30 m posting of SRTM data and delivering the highest practical
+        /// elevation resolution available from the Open-Elevation API.
+        /// </para>
+        ///
+        /// <para>
+        /// Large grids are fetched in batches (see
+        /// <see cref="ElevationGrid.SampleAsync"/>) to avoid exceeding the API's
+        /// practical per-request limit.
+        /// </para>
         ///
         /// <para><strong>Usage (programmatic)</strong></para>
         /// <code>
@@ -219,8 +276,20 @@ namespace TerraDrive.Tools
         /// <param name="lat">Centre latitude in decimal degrees (WGS-84).</param>
         /// <param name="lon">Centre longitude in decimal degrees (WGS-84).</param>
         /// <param name="radius">Search radius in metres (must match the OSM download radius).</param>
-        /// <param name="rows">Number of latitude samples in the grid (default: 32).</param>
-        /// <param name="cols">Number of longitude samples in the grid (default: 32).</param>
+        /// <param name="rows">
+        /// Number of latitude samples in the grid.  Pass 0 (the default) to auto-compute
+        /// from <paramref name="targetSpacingMetres"/>.
+        /// </param>
+        /// <param name="cols">
+        /// Number of longitude samples in the grid.  Pass 0 (the default) to auto-compute
+        /// from <paramref name="targetSpacingMetres"/>.
+        /// </param>
+        /// <param name="targetSpacingMetres">
+        /// Desired sample spacing used when auto-computing grid dimensions.  Defaults to
+        /// <see cref="SrtmSpacingMetres"/> (30 m) to match the native SRTM resolution.
+        /// Ignored when <paramref name="rows"/> and <paramref name="cols"/> are both
+        /// explicitly provided (non-zero).
+        /// </param>
         /// <param name="elevationSource">
         /// Optional elevation data source. When <c>null</c> (the default), a new
         /// <see cref="OpenElevationSource"/> backed by the downloader's
@@ -235,20 +304,25 @@ namespace TerraDrive.Tools
             double lat,
             double lon,
             int radius,
-            int rows = 32,
-            int cols = 32,
+            int rows = 0,
+            int cols = 0,
+            double targetSpacingMetres = SrtmSpacingMetres,
             IElevationSource? elevationSource = null,
             CancellationToken cancellationToken = default)
         {
             var source = elevationSource ?? new OpenElevationSource(_httpClient);
             var (minLat, maxLat, minLon, maxLon) = ComputeBoundingBox(lat, lon, radius);
 
+            if (rows <= 0 || cols <= 0)
+                (rows, cols) = ComputeGridDimensions(minLat, maxLat, minLon, maxLon, targetSpacingMetres);
+
             Console.WriteLine(
                 $"Downloading elevation grid ({rows}×{cols}) for bounding box " +
                 $"[{minLat:F4},{maxLat:F4}] × [{minLon:F4},{maxLon:F4}]...");
 
             ElevationGrid grid = await ElevationGrid.SampleAsync(
-                minLat, maxLat, minLon, maxLon, rows, cols, source, cancellationToken)
+                minLat, maxLat, minLon, maxLon, rows, cols, source,
+                cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
 
             Console.WriteLine($"Downloaded {rows * cols} elevation samples.");

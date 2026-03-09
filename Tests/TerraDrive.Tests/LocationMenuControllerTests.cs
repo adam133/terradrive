@@ -65,7 +65,8 @@ namespace TerraDrive.Tests
 
             public Task<ElevationGrid> DownloadElevationGridAsync(
                 double lat, double lon, int radius,
-                int rows = 32, int cols = 32,
+                int rows = 0, int cols = 0,
+                double targetSpacingMetres = OsmDownloader.SrtmSpacingMetres,
                 IElevationSource? elevationSource = null,
                 CancellationToken cancellationToken = default)
             {

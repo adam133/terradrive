@@ -29,14 +29,18 @@ namespace TerraDrive.Terrain
     ///   </item>
     ///   <item>
     ///     <description>
-    ///       <strong>Sufficient resolution</strong> — SRTM's 30 m horizontal posting is
-    ///       adequate for road and terrain mesh generation in a driving simulator.
+    ///       <strong>Full SRTM resolution via batched requests</strong> — SRTM's native
+    ///       30 m horizontal posting can now be fully exploited: <see cref="ElevationGrid.SampleAsync"/>
+    ///       automatically splits large grids into batches, so any area can be sampled at
+    ///       the highest resolution the underlying data provides.
     ///     </description>
     ///   </item>
     ///   <item>
     ///     <description>
     ///       <strong>Batch API</strong> — a single POST can resolve hundreds of points,
-    ///       minimising round-trips when loading OSM node sets.
+    ///       minimising round-trips when loading OSM node sets.  For large high-resolution
+    ///       grids, <see cref="ElevationGrid.SampleAsync"/> automatically splits the
+    ///       request into multiple batches of a configurable size (default 512 points).
     ///     </description>
     ///   </item>
     /// </list>

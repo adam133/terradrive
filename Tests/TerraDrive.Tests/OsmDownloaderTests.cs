@@ -652,6 +652,97 @@ namespace TerraDrive.Tests
             Assert.That(grid[1, 1], Is.EqualTo(40.0));
         }
 
+        [Test]
+        public async Task DownloadElevationGridAsync_ZeroRowsCols_AutoComputesDimensionsFromSrtmSpacing()
+        {
+            // Capture how many points are requested; for rows=0/cols=0 the grid should be
+            // computed from the SRTM 30 m spacing rather than defaulting to 32×32.
+            int requestedPoints = 0;
+            var stub = new CountingElevationSource(count => requestedPoints += count);
+            var downloader = new OsmDownloader(new HttpClient(new StubHttpMessageHandler(
+                _ => new HttpResponseMessage(HttpStatusCode.OK))));
+
+            ElevationGrid grid = await downloader.DownloadElevationGridAsync(
+                lat: 51.5, lon: -0.1, radius: 5000, rows: 0, cols: 0, elevationSource: stub);
+
+            var (minLat, maxLat, minLon, maxLon) = OsmDownloader.ComputeBoundingBox(51.5, -0.1, 5000);
+            var (expectedRows, expectedCols) = OsmDownloader.ComputeGridDimensions(
+                minLat, maxLat, minLon, maxLon);
+
+            Assert.That(grid.Rows, Is.EqualTo(expectedRows));
+            Assert.That(grid.Cols, Is.EqualTo(expectedCols));
+            Assert.That(requestedPoints, Is.EqualTo(expectedRows * expectedCols));
+        }
+
+        [Test]
+        public async Task DownloadElevationGridAsync_AutoDimensions_GreaterThan32x32ForTypicalRadius()
+        {
+            // SRTM 30 m spacing over a 5 km radius should yield a grid much larger than 32×32.
+            var stub = new CountingElevationSource(_ => { });
+            var downloader = new OsmDownloader(new HttpClient(new StubHttpMessageHandler(
+                _ => new HttpResponseMessage(HttpStatusCode.OK))));
+
+            ElevationGrid grid = await downloader.DownloadElevationGridAsync(
+                lat: 51.5, lon: -0.1, radius: 5000, rows: 0, cols: 0, elevationSource: stub);
+
+            Assert.That(grid.Rows, Is.GreaterThan(32),
+                "Auto-computed rows should exceed the old 32-row default for a 5 km radius.");
+            Assert.That(grid.Cols, Is.GreaterThan(32),
+                "Auto-computed cols should exceed the old 32-col default for a 5 km radius.");
+        }
+
+        // ── ComputeGridDimensions ─────────────────────────────────────────────
+
+        [Test]
+        public void ComputeGridDimensions_RowsAndColsAtLeastTwo()
+        {
+            // Very small area must still produce a valid 2×2 minimum grid.
+            var (rows, cols) = OsmDownloader.ComputeGridDimensions(0.0, 0.0001, 0.0, 0.0001);
+
+            Assert.That(rows, Is.GreaterThanOrEqualTo(2));
+            Assert.That(cols, Is.GreaterThanOrEqualTo(2));
+        }
+
+        [Test]
+        public void ComputeGridDimensions_LargerAreaProducesMorePoints()
+        {
+            var (rows1, cols1) = OsmDownloader.ComputeGridDimensions(51.4, 51.6, -0.2, 0.0);   // ~22 km
+            var (rows2, cols2) = OsmDownloader.ComputeGridDimensions(51.45, 51.55, -0.1, -0.05); // ~5 km
+
+            Assert.That(rows1, Is.GreaterThan(rows2),
+                "A larger latitude span should produce more rows.");
+            Assert.That(cols1, Is.GreaterThan(cols2),
+                "A larger longitude span should produce more columns.");
+        }
+
+        [Test]
+        public void ComputeGridDimensions_DefaultSpacing_IsSrtmNativeResolution()
+        {
+            // Calling without spacing argument should use SrtmSpacingMetres.
+            var (rowsDefault, colsDefault) = OsmDownloader.ComputeGridDimensions(51.4, 51.6, -0.2, 0.0);
+            var (rowsExplicit, colsExplicit) = OsmDownloader.ComputeGridDimensions(
+                51.4, 51.6, -0.2, 0.0, OsmDownloader.SrtmSpacingMetres);
+
+            Assert.That(rowsDefault, Is.EqualTo(rowsExplicit));
+            Assert.That(colsDefault, Is.EqualTo(colsExplicit));
+        }
+
+        [Test]
+        public void ComputeGridDimensions_CoarserSpacing_ProducesFewerPoints()
+        {
+            var (rowsFine, _) = OsmDownloader.ComputeGridDimensions(51.4, 51.6, -0.2, 0.0, 30.0);
+            var (rowsCoarse, _) = OsmDownloader.ComputeGridDimensions(51.4, 51.6, -0.2, 0.0, 100.0);
+
+            Assert.That(rowsFine, Is.GreaterThan(rowsCoarse),
+                "Finer spacing should produce more rows than coarser spacing.");
+        }
+
+        [Test]
+        public void SrtmSpacingMetres_IsThirtyMetres()
+        {
+            Assert.That(OsmDownloader.SrtmSpacingMetres, Is.EqualTo(30.0));
+        }
+
         // ── DeriveElevationPath ───────────────────────────────────────────────
 
         [Test]
@@ -707,6 +798,23 @@ namespace TerraDrive.Tests
                 IReadOnlyList<(double lat, double lon)> locations,
                 CancellationToken cancellationToken = default)
                 => Task.FromResult(_values);
+        }
+
+        // Elevation source that counts how many points were requested ─────────
+
+        private sealed class CountingElevationSource : IElevationSource
+        {
+            private readonly Action<int> _onCount;
+
+            public CountingElevationSource(Action<int> onCount) => _onCount = onCount;
+
+            public Task<IReadOnlyList<double>> FetchElevationsAsync(
+                IReadOnlyList<(double lat, double lon)> locations,
+                CancellationToken cancellationToken = default)
+            {
+                _onCount(locations.Count);
+                return Task.FromResult<IReadOnlyList<double>>(new double[locations.Count]);
+            }
         }
 
         // Stub HTTP handler -──────────────────────────────────────────────────
