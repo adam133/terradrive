@@ -156,10 +156,11 @@ A pre-built scene is included at `Assets/Scenes/ProofOfConcept.unity`.  Open it 
 
 The scene contains:
 - **Directional Light** — a sun-like light angled at (50°, −30°, 0°).
-- **GameManager** — the singleton state machine, defaulting to `MainMenu` state and centred on London (51.5074, −0.1278).
+- **GameManager** — the singleton state machine, defaulting to `MainMenu` state and centred on Ames, Iowa (41.8957, −93.5888) — the geographic origin of the bundled sample data.
 - **MaterialRegistry** — pre-populated with all 25 texture-ID slots (road surfaces, kerbs, building walls, building roofs).  Each slot is empty by default; drag your Unity `Material` assets into the Inspector to wire them up (see §4a below).
+- **MapSceneBuilder** — wired to `Assets/Data/map.osm.xml` + `Assets/Data/map.elevation.csv`.  On Play it loads the map, builds the terrain/road/building geometry, and transitions the `GameManager` through `LoadingMap → GeneratingLevel → Racing` automatically.
 
-You still need to add a ground plane, vehicle, and camera manually (§4b–4e).
+You still need to add a vehicle and camera manually (§4b–4e).  The terrain mesh is generated automatically by `MapSceneBuilder`, so you no longer need to create a flat ground plane.
 
 ### 4a. Assign materials to the MaterialRegistry
 
@@ -182,12 +183,7 @@ You still need to add a ground plane, vehicle, and camera manually (§4b–4e).
 > **Tip:** Start with a small set — assign one asphalt material to all road rows and one
 > brick material to all building rows.  You can refine region-specific materials later.
 
-### 4b. Add a flat ground plane
-
-**GameObject → 3D Object → Plane**. Scale it to `(100, 1, 100)` so the car has somewhere
-to drive while the procedural road mesh is not yet connected.
-
-### 4c. Create a vehicle
+### 4b. Create a vehicle
 
 1. Create an empty GameObject named `Car`.
 2. Add a **Rigidbody** component (mass ≈ 1500 kg).
@@ -199,8 +195,10 @@ to drive while the procedural road mesh is not yet connected.
    in the Inspector.
 7. Optionally add visible wheel meshes (cylinder primitives work fine) and assign them to
    the **Visual Wheel Transforms** fields.
+8. Drag the `Car` GameObject into the **Vehicle** field on the **MapSceneBuilder** component
+   so it is repositioned above the map origin when loading completes.
 
-### 4e. Add the chase camera
+### 4c. Add the chase camera
 
 1. Select the **Main Camera** in the Hierarchy.
 2. Add the **ChaseCam** component.
@@ -208,6 +206,9 @@ to drive while the procedural road mesh is not yet connected.
 
 > The scene already contains a **Directional Light** — no need to add one unless you deleted
 > it or are starting from a different base scene.
+
+> **No ground plane needed** — `MapSceneBuilder` generates a heightfield terrain mesh with a
+> `MeshCollider` from the elevation data automatically when the scene starts.
 
 ---
 
@@ -284,6 +285,7 @@ Run the produced binary to play the game outside the editor.
 | CLI project create + configure (batch mode) | ✅ Working — `ProjectSetup.Configure` via `-executeMethod` |
 | Automated release builds (CI/CD) | ✅ Working — push to `release` branch triggers `release.yml` |
 | Texture ID → Material wiring | ✅ Working — `MaterialRegistry` scene component + `ProofOfConcept.unity` with all 25 texture slots |
+| Runtime scene assembly | ✅ Working — `MapSceneBuilder` loads OSM + elevation data on Play, instantiates terrain / road / building GameObjects, and drives the `GameManager` state machine (`LoadingMap → GeneratingLevel → Racing`); pre-wired in `ProofOfConcept.unity` |
 | Speedometer HUD + minimap renderer | ⚠️ Partial — `SpeedometerHud` (reads vehicle speed → MPH) and `MinimapRenderer` (road segments → minimap lines) exist; in-scene canvas overlay is planned |
 | Prefab selection per region kit | 🔲 Planned |
 | Race logic, checkpoints, HUD overlay | 🔲 Planned |

@@ -8,6 +8,7 @@ Game-wide managers, state machines, coordinate utilities, and the map-loading pi
 | `CoordinateConverter.cs` | Converts WGS-84 GPS coordinates to Unity world-space XZ metres |
 | `MapLoader.cs` | End-to-end async pipeline: loads `.osm` + `.elevation.csv`, parses with terrain elevation, returns a `MapData` object |
 | `MapData.cs` | Container holding roads, buildings, region type, terrain mesh, and elevation grid |
+| `MapSceneBuilder.cs` | Unity MonoBehaviour that drives `MapLoader` at runtime and instantiates terrain, road, and building GameObjects in the scene |
 
 ## CoordinateConverter
 
@@ -41,3 +42,31 @@ mesh.RecalculateNormals();
 
 The pipeline is: load elevation grid → parse OSM with terrain elevation → generate heightfield
 terrain mesh.  All results are returned in `MapData` which also exposes the raw `ElevationGrid`.
+
+## MapSceneBuilder
+
+`MapSceneBuilder` is a Unity `MonoBehaviour` that wires the full data pipeline into a running
+scene.  Add it to any scene GameObject, configure the paths in the Inspector, and press Play:
+
+| Inspector field | Default | Notes |
+|---|---|---|
+| `OsmFilePath` | `Assets/Data/map.osm.xml` | Path to the `.osm` file (absolute or project-root-relative) |
+| `ElevationCsvPath` | `Assets/Data/map.elevation.csv` | Companion `.elevation.csv` file |
+| `OriginLatitude` | `0` | Map origin latitude; `0` inherits from `GameManager` |
+| `OriginLongitude` | `0` | Map origin longitude; `0` inherits from `GameManager` |
+| `Registry` | *(scene ref)* | `MaterialRegistry` used to apply materials to generated meshes |
+| `Vehicle` | *(optional)* | Vehicle `Transform` to position at the map origin after loading |
+| `VehicleSpawnHeight` | `2` | Height above origin (metres) at which the vehicle is placed |
+
+At runtime `MapSceneBuilder` drives the `GameManager` state machine:
+
+```
+MainMenu → LoadingMap → GeneratingLevel → Racing
+```
+
+One `GameObject` is spawned per road segment (with `Surface` and `Kerb` children) and per
+building footprint (with `Walls` and `Roof` children).  A single `Terrain` GameObject carries
+the heightfield mesh and a `MeshCollider`.
+
+The `ProofOfConcept.unity` scene ships with `MapSceneBuilder` pre-wired to the bundled
+`Assets/Data/map.osm.xml` + `Assets/Data/map.elevation.csv` sample data (Ames, Iowa).
