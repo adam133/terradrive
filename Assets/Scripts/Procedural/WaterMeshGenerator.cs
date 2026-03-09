@@ -23,7 +23,12 @@ namespace TerraDrive.Procedural
     /// </summary>
     public static class WaterMeshGenerator
     {
-        /// <summary>World-space UV tile scale for water textures (tiles per metre).</summary>
+        /// <summary>
+        /// World-space UV tile scale for water textures (tiles per metre).
+        /// A value of 0.05 tiles one texture repeat every 20 metres, which gives a
+        /// natural scale for lake and river surface patterns visible from the default
+        /// chase-camera distance.
+        /// </summary>
         internal const float UvScale = 0.05f;
 
         // ── Public API ─────────────────────────────────────────────────────────

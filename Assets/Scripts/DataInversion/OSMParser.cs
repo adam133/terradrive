@@ -422,7 +422,8 @@ namespace TerraDrive.DataInversion
                 (string.Equals(waterwayVal, "riverbank", StringComparison.OrdinalIgnoreCase) ||
                  string.Equals(waterwayVal, "dock",      StringComparison.OrdinalIgnoreCase)))
             {
-                waterType = waterwayVal.ToLowerInvariant();
+                waterType = string.Equals(waterwayVal, "riverbank", StringComparison.OrdinalIgnoreCase)
+                    ? "riverbank" : "dock";
                 return true;
             }
 
