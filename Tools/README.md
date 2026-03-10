@@ -8,6 +8,11 @@ Editor and command-line utilities for the TerraDrive pipeline.
 
 Downloads road and building data from the [Overpass API](https://overpass-api.de/) for a given GPS coordinate and radius, then saves the result as an `.osm` file for use in Unity.
 
+Implementation note: the `OsmDownloader` and `IOsmDownloader` source files are in
+`Assets/Scripts/Tools/` (shared by Unity runtime, tests, and this CLI).  The
+`Tools/OsmDownloader/` folder contains the CLI entrypoint (`Program.cs`) and
+`OsmDownloader.csproj`.
+
 By default, a DEM elevation grid is also downloaded for the same bounding box (via the [Open-Elevation API](https://open-elevation.com), backed by SRTM 30 m data) and saved as a companion `.elevation.csv` file.  Pass `--no-elevation` to suppress the elevation download.
 
 ### Build

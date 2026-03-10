@@ -5,10 +5,14 @@ Assets/Data/*.osm
 [Ll]ibrary/
 [Tt]emp/
 [Oo]bj/
+[Bb]in/
 [Bb]uild/
 [Bb]uilds/
 [Ll]ogs/
 [Uu]ser[Ss]ettings/
+.vs/
+MemoryCaptures/
+Recordings/
 ExportedObj/
 crashlytics-build.properties
 *.pidb
@@ -38,6 +42,26 @@ Tests/**/obj/
 # ── .NET tool build artifacts ─────────────────────────────────────────────────
 Tools/**/bin/
 Tools/**/obj/
+Tools/**/publish/
+
+# ── Generic nested build outputs (all projects) ─────────────────────────────
+**/[Bb]in/
+**/[Oo]bj/
+TestResults/
+
+# ── Compiled/binary build outputs ────────────────────────────────────────────
+*.dll
+*.exe
+*.so
+*.dylib
+*.a
+*.lib
+*.o
+*.obj
+*.class
+*.apk
+*.aab
+*.symbols.zip
 
 
 .DS_Store

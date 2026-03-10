@@ -40,6 +40,11 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
   /Tools             ← Editor scripts for map downloading
 ```
 
+Note: `OsmDownloader` and `IOsmDownloader` source now lives in
+`Assets/Scripts/Tools/` so Unity, tests, and the CLI share one implementation.
+`Tools/OsmDownloader/` contains the .NET CLI project entrypoint (`Program.cs`) and
+project file.
+
 ---
 
 ## Phased Implementation Plan
@@ -51,7 +56,8 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 - [x] Use the [Overpass API](https://overpass-api.de/) to download road data within a configurable radius (default 5 km).
 - [x] Save `.osm` files to a local project folder for offline / editor use.
 - [x] Bundle elevation/DEM data alongside the `.osm` download by default (downloads a SRTM 30 m grid from the [Open-Elevation API](https://open-elevation.com) and saves it as a companion `.elevation.csv` file; suppress with `--no-elevation`).
-- See [`Tools/OsmDownloader/`](Tools/OsmDownloader/) and [`Tools/README.md`](Tools/README.md).
+- See [`Assets/Scripts/Tools/`](Assets/Scripts/Tools/),
+  [`Tools/OsmDownloader/`](Tools/OsmDownloader/), and [`Tools/README.md`](Tools/README.md).
 
 ### Phase 2 — Spline Generator ✅
 

@@ -24,7 +24,7 @@ namespace TerraDrive.Vehicle
 
         /// <summary>Current vehicle speed in miles per hour (unrounded).</summary>
         public float RawSpeedMph =>
-            _rb != null ? Speedometer.ToMph(_rb.velocity.magnitude) : 0f;
+            _rb != null ? Speedometer.ToMph(_rb.linearVelocity.magnitude) : 0f;
 
         /// <summary>Current vehicle speed in MPH rounded to the nearest integer.</summary>
         public int SpeedMph => Mathf.RoundToInt(RawSpeedMph);

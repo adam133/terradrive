@@ -81,6 +81,10 @@ The `.osm` file is read by `OSMParser` at runtime; the `.elevation.csv` file is 
 and building node to the real-world terrain elevation and to generate the heightfield terrain
 mesh.  See [`Tools/README.md`](Tools/README.md) for the full argument reference.
 
+Source note: the downloader implementation (`OsmDownloader`, `IOsmDownloader`) is in
+`Assets/Scripts/Tools/`; `Tools/OsmDownloader/` is the CLI wrapper project used by
+`dotnet run --project Tools/OsmDownloader`.
+
 ---
 
 ## Step 3 — Open / Create the Project in Unity
@@ -103,9 +107,9 @@ CI server or a headless machine), use Unity's batch-mode flags:
 
 ```bat
 :: Windows — create / import the project
-"C:\Program Files\Unity\Hub\Editor\6000.3.x\Editor\Unity.exe" ^
+"C:\Program Files\Unity\Hub\Editor\6000.3.10f1\Editor\Unity.exe" ^
     -batchmode -quit ^
-    -createProject "C:\path\to\terradrive"
+    -createProject "C:\Users\Adam\Documents\GitHub\terradrive"
 ```
 
 ```bash
@@ -121,9 +125,9 @@ Once the project has been imported, apply the standard TerraDrive project settin
 
 ```bat
 :: Windows
-"C:\Program Files\Unity\Hub\Editor\6000.3.x\Editor\Unity.exe" ^
+"C:\Program Files\Unity\Hub\Editor\6000.3.10f1\Editor\Unity.exe" ^
     -batchmode -quit ^
-    -projectPath "C:\path\to\terradrive" ^
+    -projectPath "C:\Users\Adam\Documents\GitHub\terradrive" ^
     -executeMethod TerraDrive.Editor.ProjectSetup.Configure
 ```
 
@@ -145,14 +149,6 @@ The script configures the following defaults:
 
 You can also trigger the same setup interactively at any time from the Unity menu bar:
 **TerraDrive → Configure Project**.
-
----
-
-## Step 4 — Open the Proof-of-Concept Scene
-
-A pre-built scene is included at `Assets/Scenes/ProofOfConcept.unity`.  Open it in Unity:
-
-**File → Open Scene → Assets/Scenes/ProofOfConcept.unity**
 
 The scene contains:
 - **Directional Light** — a sun-like light angled at (50°, −30°, 0°).

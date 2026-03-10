@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Net.Http;
 using System.Text;
-using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -151,7 +151,7 @@ namespace TerraDrive.Terrain
                 response.EnsureSuccessStatusCode();
 
                 string responseBody =
-                    await response.Content.ReadAsStringAsync(cancellationToken)
+                    await response.Content.ReadAsStringAsync()
                                   .ConfigureAwait(false);
 
                 return ParseResponseJson(responseBody, locations.Count);
@@ -201,22 +201,26 @@ namespace TerraDrive.Terrain
         /// </exception>
         internal static IReadOnlyList<double> ParseResponseJson(string responseBody, int expectedCount)
         {
-            using JsonDocument doc  = JsonDocument.Parse(responseBody);
-            JsonElement        root = doc.RootElement;
+            if (string.IsNullOrWhiteSpace(responseBody))
+                throw new InvalidOperationException("Open-Elevation response body is empty.");
 
-            if (!root.TryGetProperty("results", out JsonElement results))
-                throw new InvalidOperationException(
-                    "Open-Elevation response is missing the 'results' field.");
+            var matches = Regex.Matches(
+                responseBody,
+                "\"elevation\"\\s*:\\s*(-?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eE][+-]?\\d+)?)");
 
-            int resultCount = results.GetArrayLength();
+            int resultCount = matches.Count;
             if (resultCount != expectedCount)
                 throw new InvalidOperationException(
                     $"Open-Elevation returned {resultCount} result(s) but {expectedCount} were expected.");
 
             var elevations = new double[expectedCount];
-            int idx = 0;
-            foreach (JsonElement result in results.EnumerateArray())
-                elevations[idx++] = result.GetProperty("elevation").GetDouble();
+            for (int i = 0; i < expectedCount; i++)
+            {
+                string value = matches[i].Groups[1].Value;
+                if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double elevation))
+                    throw new InvalidOperationException($"Invalid elevation value '{value}' in Open-Elevation response.");
+                elevations[i] = elevation;
+            }
 
             return elevations;
         }

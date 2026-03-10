@@ -10,6 +10,8 @@
 
   <!-- Include the terrain classes that OsmDownloader depends on for elevation download -->
   <ItemGroup>
+    <Compile Include="../../Assets/Scripts/Tools/IOsmDownloader.cs" />
+    <Compile Include="../../Assets/Scripts/Tools/OsmDownloader.cs" />
     <Compile Include="../../Assets/Scripts/Terrain/IElevationSource.cs" />
     <Compile Include="../../Assets/Scripts/Terrain/OpenElevationSource.cs" />
     <Compile Include="../../Assets/Scripts/Terrain/ElevationGrid.cs" />

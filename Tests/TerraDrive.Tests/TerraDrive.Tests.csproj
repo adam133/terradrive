@@ -39,8 +39,8 @@
     <Compile Include="../../Assets/Scripts/Terrain/ElevationGrid.cs" />
     <Compile Include="../../Assets/Scripts/Terrain/TerrainMeshResult.cs" />
     <Compile Include="../../Assets/Scripts/Terrain/TerrainMeshGenerator.cs" />
-    <Compile Include="../../Tools/OsmDownloader/IOsmDownloader.cs" />
-    <Compile Include="../../Tools/OsmDownloader/OsmDownloader.cs" />
+    <Compile Include="../../Assets/Scripts/Tools/IOsmDownloader.cs" />
+    <Compile Include="../../Assets/Scripts/Tools/OsmDownloader.cs" />
     <Compile Include="../../Assets/Scripts/Vehicle/Speedometer.cs" />
     <Compile Include="../../Assets/Scripts/Hud/MinimapRenderer.cs" />
   </ItemGroup>
