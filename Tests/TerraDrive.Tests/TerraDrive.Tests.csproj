@@ -25,6 +25,7 @@
     <Compile Include="../../Assets/Scripts/Procedural/BuildingGenerator.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/BuildingMeshResult.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/MaterialRegistry.cs" />
+    <Compile Include="../../Assets/Scripts/Procedural/PlaceholderMaterialFactory.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/PropPlacement.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/PropType.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/RegionTextures.cs" />

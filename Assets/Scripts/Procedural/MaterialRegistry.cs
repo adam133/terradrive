@@ -57,7 +57,11 @@ namespace TerraDrive.Procedural
 
         private Dictionary<string, Material> _lookup = new Dictionary<string, Material>();
 
-        private void Awake() => BuildLookup();
+        private void Awake()
+        {
+            BuildLookup();
+            PlaceholderMaterialFactory.FillMissing(this);
+        }
 
         /// <summary>
         /// (Re-)builds the internal look-up dictionary from the current <c>_entries</c> list.

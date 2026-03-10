@@ -136,12 +136,38 @@ namespace UnityEngine
     /// <summary>Stub for UnityEngine.MonoBehaviour — base class for Unity components.</summary>
     public class MonoBehaviour { }
 
+    /// <summary>Stub for UnityEngine.Color — stores RGBA channels for test assertions.</summary>
+    public struct Color
+    {
+        public float r, g, b, a;
+
+        public Color(float r, float g, float b, float a = 1f)
+        {
+            this.r = r; this.g = g; this.b = b; this.a = a;
+        }
+
+        public static Color white => new Color(1f, 1f, 1f);
+        public static Color gray  => new Color(0.5f, 0.5f, 0.5f);
+        public static Color black => new Color(0f, 0f, 0f);
+    }
+
+    /// <summary>Stub for UnityEngine.Shader — always returns a non-null instance.</summary>
+    public class Shader
+    {
+        public static Shader? Find(string name) => new Shader();
+    }
+
     /// <summary>Stub for UnityEngine.Material — minimal surface material.</summary>
     public class Material
     {
-        public string name { get; set; }
+        public string name  { get; set; }
+        public Color  color { get; set; } = Color.white;
 
         public Material(string name = "") { this.name = name ?? string.Empty; }
+        public Material(Shader? shader)   { this.name = string.Empty; }
+
+        public void SetFloat(string propertyName, float value) { }
+        public void SetColor(string propertyName, Color value) { color = value; }
     }
 
     /// <summary>Stub for UnityEngine.MeshRenderer — holds a shared material reference.</summary>
