@@ -1,0 +1,21 @@
+{
+    "name": "TerraDrive.Tests.PlayMode",
+    "rootNamespace": "TerraDrive.Tests.PlayMode",
+    "references": [
+        "UnityEngine.TestRunner",
+        "GUID:387341ccd734fa046a0b98bd1924840b"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
