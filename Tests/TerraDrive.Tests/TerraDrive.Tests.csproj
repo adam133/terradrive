@@ -15,6 +15,7 @@
     <Compile Include="../../Assets/Scripts/Core/LocationMenuController.cs" />
     <Compile Include="../../Assets/Scripts/Core/MapData.cs" />
     <Compile Include="../../Assets/Scripts/Core/MapLoader.cs" />
+    <Compile Include="../../Assets/Scripts/Core/OsmLevelLoader.cs" />
     <Compile Include="../../Assets/Scripts/DataInversion/MapNode.cs" />
     <Compile Include="../../Assets/Scripts/DataInversion/MapWay.cs" />
     <Compile Include="../../Assets/Scripts/DataInversion/OSMParser.cs" />

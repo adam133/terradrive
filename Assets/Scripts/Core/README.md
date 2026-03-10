@@ -9,6 +9,7 @@ Game-wide managers, state machines, coordinate utilities, and the map-loading pi
 | `MapLoader.cs` | End-to-end async pipeline: loads `.osm` + `.elevation.csv`, parses with terrain elevation, returns a `MapData` object |
 | `MapData.cs` | Container holding roads, buildings, region type, terrain mesh, and elevation grid |
 | `MapSceneBuilder.cs` | Unity MonoBehaviour that drives `MapLoader` at runtime and instantiates terrain, road, and building GameObjects in the scene |
+| `OsmLevelLoader.cs` | Pure C# GPS-coordinate settings/validator for the **TerraDrive → Load OSM File / Generate Level** editor menu item; holds `Latitude`, `Longitude`, `Radius` and exposes `Validate()` / `IsValid()` |
 
 ## CoordinateConverter
 
