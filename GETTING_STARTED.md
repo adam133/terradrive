@@ -167,20 +167,20 @@ The quickest way to try any location — no manual file downloads or Inspector e
 6. After download the active scene's `MapSceneBuilder` and `GameManager` are configured
    automatically.  The scene is marked dirty — save it if you want to keep the settings.
 7. A confirmation dialog asks whether to **Enter Play Mode** immediately to build the
-   terrain, road, and building geometry.
+   terrain, road, building, and water geometry.
 
 The scene contains:
 - **Directional Light** — a sun-like light angled at (50°, −30°, 0°).
 - **GameManager** — the singleton state machine, defaulting to `MainMenu` state and centred on Ames, Iowa (41.8957, −93.5888) — the geographic origin of the bundled sample data.
-- **MaterialRegistry** — pre-populated with all 25 texture-ID slots (road surfaces, kerbs, building walls, building roofs).  Each slot is empty by default; drag your Unity `Material` assets into the Inspector to wire them up (see §4a below).
-- **MapSceneBuilder** — wired to `Assets/Data/map.osm.xml` + `Assets/Data/map.elevation.csv`.  On Play it loads the map, builds the terrain/road/building geometry, and transitions the `GameManager` through `LoadingMap → GeneratingLevel → Racing` automatically.
+- **MaterialRegistry** — pre-populated with 25 assignable texture-ID slots (road surfaces, kerbs, building walls, building roofs).  Each slot is empty by default; drag your Unity `Material` assets into the Inspector to wire them up (see §4a below).  Water, terrain, and lane-marking slots are filled automatically with solid-colour placeholders at startup.
+- **MapSceneBuilder** — wired to `Assets/Data/map.osm.xml` + `Assets/Data/map.elevation.csv`.  On Play it loads the map, builds the terrain/road/building/water geometry, and transitions the `GameManager` through `LoadingMap → GeneratingLevel → Racing` automatically.
 
 You still need to add a vehicle and camera manually (§4b–4e).  The terrain mesh is generated automatically by `MapSceneBuilder`, so you no longer need to create a flat ground plane.
 
 ### 4a. Assign materials to the MaterialRegistry
 
 1. Select the **MaterialRegistry** GameObject in the Hierarchy.
-2. In the Inspector, expand **Entries**.  You will see 25 rows, one per texture ID:
+2. In the Inspector, expand **Entries**.  You will see 25 rows for road/kerb/building texture IDs:
 
    | Texture ID | What it covers |
    |---|---|
@@ -197,6 +197,11 @@ You still need to add a vehicle and camera manually (§4b–4e).  The terrain me
 
 > **Tip:** Start with a small set — assign one asphalt material to all road rows and one
 > brick material to all building rows.  You can refine region-specific materials later.
+
+> **Note:** Water, terrain, and lane-marking texture IDs (`water`, `water_arctic`,
+> `water_tropical`, `terrain_grass`, `lane_marking_oneway`, `lane_marking_twoway`) are
+> filled automatically with solid-colour placeholder materials by `PlaceholderMaterialFactory`
+> in `Awake` for any slot that has no assigned material.
 
 ### 4b. Create a vehicle
 
@@ -288,10 +293,11 @@ Run the produced binary to play the game outside the editor.
 
 | Feature | Status |
 |---|---|
-| OSM parsing → road/building data | ✅ Working |
+| OSM parsing → road/building/water data | ✅ Working |
 | Spline generation | ✅ Working |
 | Road + kerb mesh extrusion | ✅ Working |
 | Building footprint → 3D mesh | ✅ Working |
+| Water body → flat surface mesh | ✅ Working — `WaterMeshGenerator.Generate` produces a fan-triangulated polygon mesh for lakes, ponds, riverbanks, and reservoirs |
 | Roadside prop placement | ✅ Working |
 | Region / biome detection from OSM tags | ✅ Working |
 | Elevation (DEM) integration | ✅ Working — `ElevationGrid.SampleAsync` + `TerrainMeshGenerator.Generate` + `OSMParser.ParseAsync` + `OsmDownloader` downloads SRTM grid alongside `.osm` by default |
@@ -300,8 +306,9 @@ Run the produced binary to play the game outside the editor.
 | CLI project create + configure (batch mode) | ✅ Working — `ProjectSetup.Configure` via `-executeMethod` |
 | Editor menu: Load OSM File / Generate Level | ✅ Working — **TerraDrive → Load OSM File / Generate Level** opens an editor window, accepts lat/lon/radius, downloads OSM + elevation data via `OsmDownloader`, wires `MapSceneBuilder` and `GameManager`, and optionally enters Play mode |
 | Automated release builds (CI/CD) | ✅ Working — push to `release` branch triggers `release.yml` |
-| Texture ID → Material wiring | ✅ Working — `MaterialRegistry` scene component + `ProofOfConcept.unity` with all 25 texture slots |
-| Runtime scene assembly | ✅ Working — `MapSceneBuilder` loads OSM + elevation data on Play, instantiates terrain / road / building GameObjects, and drives the `GameManager` state machine (`LoadingMap → GeneratingLevel → Racing`); pre-wired in `ProofOfConcept.unity` |
+| Texture ID → Material wiring | ✅ Working — `MaterialRegistry` scene component + placeholder auto-fill via `PlaceholderMaterialFactory` |
+| Runtime scene assembly | ✅ Working — `MapSceneBuilder` loads OSM + elevation data on Play, instantiates terrain / road / building / water GameObjects, and drives the `GameManager` state machine (`LoadingMap → GeneratingLevel → Racing`); pre-wired in `ProofOfConcept.unity` |
+| Location menu controller | ✅ Working — `LocationMenuController.LoadLocationAsync` downloads OSM + elevation data for any GPS coordinate and returns a fully built `MapData` with spawn position |
 | Speedometer HUD + minimap renderer | ⚠️ Partial — `SpeedometerHud` (reads vehicle speed → MPH) and `MinimapRenderer` (road segments → minimap lines) exist; in-scene canvas overlay is planned |
 | Prefab selection per region kit | 🔲 Planned |
 | Race logic, checkpoints, HUD overlay | 🔲 Planned |

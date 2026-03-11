@@ -53,46 +53,27 @@ project file.
 
 **Goal:** Given a GPS coordinate, produce a clean `.osm` file of nearby roads and elevation data.
 
-- [x] Use the [Overpass API](https://overpass-api.de/) to download road data within a configurable radius (default 5 km).
-- [x] Save `.osm` files to a local project folder for offline / editor use.
-- [x] Bundle elevation/DEM data alongside the `.osm` download by default (downloads a SRTM 30 m grid from the [Open-Elevation API](https://open-elevation.com) and saves it as a companion `.elevation.csv` file; suppress with `--no-elevation`).
-- See [`Assets/Scripts/Tools/`](Assets/Scripts/Tools/),
-  [`Tools/OsmDownloader/`](Tools/OsmDownloader/), and [`Tools/README.md`](Tools/README.md).
+See [`Assets/Scripts/Tools/`](Assets/Scripts/Tools/),
+[`Tools/OsmDownloader/`](Tools/OsmDownloader/), and [`Tools/README.md`](Tools/README.md).
 
 ### Phase 2 — Spline Generator ✅
 
 **Goal:** Convert raw OSM nodes (lat/lon points) into smooth Catmull-Rom splines visible in the editor.
 
-- [x] Parse OSM `<way>` elements tagged with `highway` into `RoadSegment` objects.
-- [x] Parse OSM `<way>` elements tagged with `building` into `BuildingFootprint` objects.
-- [x] Project WGS-84 GPS coordinates to Unity world-space XZ using a Web Mercator (EPSG:3857) projection (offsets are in metres near the origin; scale distortion increases at high latitudes).
-- [x] Fit a Catmull-Rom spline through the projected points.
-- [x] Model raw OSM nodes and ways as typed C# structs/classes (`MapNode`, `MapWay`, `RoadType`).
-- See [`Assets/Scripts/DataInversion/OSMParser.cs`](Assets/Scripts/DataInversion/OSMParser.cs) and
-  [`Assets/Scripts/Procedural/SplineGenerator.cs`](Assets/Scripts/Procedural/SplineGenerator.cs).
+See [`Assets/Scripts/DataInversion/OSMParser.cs`](Assets/Scripts/DataInversion/OSMParser.cs) and
+[`Assets/Scripts/Procedural/SplineGenerator.cs`](Assets/Scripts/Procedural/SplineGenerator.cs).
 
 ### Phase 3 — Mesh Extruder ✅
 
 **Goal:** Turn a spline into a drivable, UV-mapped 3D road mesh.
 
-- [x] Extrude a configurable-width road mesh along each spline.
-- [x] Generate UV coordinates suitable for a tiling asphalt texture.
-- [x] Add road-type-based width variation (motorways wider than residential streets).
-- [x] Add kerbs and lane markings as separate meshes or UV channels.
-- [x] Detect `bridge`/`viaduct` OSM tags and mark road segments with `IsBridge`.
-- [x] Smoothly elevate bridge splines above the surface mesh using `BridgeElevator` (smooth-step ramps at approach and departure).
-- See [`Assets/Scripts/Procedural/RoadMeshExtruder.cs`](Assets/Scripts/Procedural/RoadMeshExtruder.cs) and [`Assets/Scripts/Procedural/BridgeElevator.cs`](Assets/Scripts/Procedural/BridgeElevator.cs).
+See [`Assets/Scripts/Procedural/RoadMeshExtruder.cs`](Assets/Scripts/Procedural/RoadMeshExtruder.cs) and [`Assets/Scripts/Procedural/BridgeElevator.cs`](Assets/Scripts/Procedural/BridgeElevator.cs).
 
 ### Phase 4 — Biomes & Asset Scatterer ⚠️ In Progress
 
 **Goal:** Populate roadsides with region-appropriate props (signs, lamp posts, buildings).
 
-- [x] Extrude building footprints into 3D wall and roof meshes with deterministic randomised heights.
-- [x] Read the `country` or `addr:country` tag from OSM nodes to detect region/biome.
-- [x] Scatter roadside props (signs, lamp posts, fences) along road splines.
-- [x] Select region-appropriate texture IDs for road and building meshes (`RegionTextures`).
 - [ ] Select prefabs from the matching regional kit folder (`European_Kit`, `Asian_Kit`, etc.).
-- [x] Wire texture IDs to Unity material assets in the scene.
 - See [`Assets/Scripts/Procedural/BuildingGenerator.cs`](Assets/Scripts/Procedural/BuildingGenerator.cs),
   [`Assets/Scripts/Procedural/RoadsidePropPlacer.cs`](Assets/Scripts/Procedural/RoadsidePropPlacer.cs),
   [`Assets/Scripts/Procedural/RegionTextures.cs`](Assets/Scripts/Procedural/RegionTextures.cs), and
@@ -102,21 +83,12 @@ project file.
 
 **Goal:** Wire up a singleton game-state machine to coordinate map loading, level generation, and racing.
 
-- [x] Implement `GameManager` singleton with a `GameState` enum (`MainMenu`, `LoadingMap`, `GeneratingLevel`, `Racing`, `Paused`, `Results`).
-- [x] Expose `OnStateChanged` events so subsystems can react without tight coupling.
-- [x] Connect `GameManager` state transitions to the OSM loading and procedural generation pipeline via `MapSceneBuilder`.
-- [x] Implement an in-editor **TerraDrive → Load OSM File / Generate Level** menu item.
-- See [`Assets/Scripts/Core/GameManager.cs`](Assets/Scripts/Core/GameManager.cs) and [`Assets/Scripts/Core/MapSceneBuilder.cs`](Assets/Scripts/Core/MapSceneBuilder.cs).
+See [`Assets/Scripts/Core/GameManager.cs`](Assets/Scripts/Core/GameManager.cs) and [`Assets/Scripts/Core/MapSceneBuilder.cs`](Assets/Scripts/Core/MapSceneBuilder.cs).
 
-### Phase 6 — Vehicle Physics ✅
+### Phase 6 — Vehicle Physics ⚠️ In Progress
 
 **Goal:** Implement a semi-realistic car controller that feels fun to drive on procedurally generated roads.
 
-- [x] `WheelCollider`-based rear-wheel-drive car with configurable motor torque, brake torque, and steering angle.
-- [x] Drift friction model — reduced sideways stiffness when the handbrake (`Space`) is held.
-- [x] Anti-roll bar on both axles to prevent cornering flips.
-- [x] Visual wheel mesh synchronisation (position + rotation).
-- [x] Chase-cam controller with configurable follow distance, height, look-ahead, and smoothing.
 - [ ] Add audio (engine rev, tyre squeal, collision sounds).
 - See [`Assets/Scripts/Vehicle/CarController.cs`](Assets/Scripts/Vehicle/CarController.cs) and
   [`Assets/Scripts/Vehicle/ChaseCam.cs`](Assets/Scripts/Vehicle/ChaseCam.cs).
@@ -125,25 +97,15 @@ project file.
 
 **Goal:** Apply real-world elevation data so roads and buildings sit on accurate terrain rather than a flat plane.
 
-- [x] Define `IElevationSource` interface for pluggable DEM backends.
-- [x] Implement `OpenElevationSource` — fetches SRTM 30 m elevation data from the [Open-Elevation API](https://open-elevation.com) (no API key required, self-hostable for offline use).
-- [x] Add elevation overloads to `CoordinateConverter` (`LatLonToUnity(lat, lon, elevMetres)` and `LatLonToUnity(lat, lon, originLat, originLon, elevMetres)`) that set the Unity Y axis.
-- [x] Sample elevation for every OSM node during map load and apply Y positions to `RoadSegment` nodes and `BuildingFootprint` corners (via `OSMParser.ParseAsync`).
-- [x] Implement `ElevationGrid` — a regular lat/lon grid of DEM samples with a `SampleAsync` factory that batch-fetches from any `IElevationSource`.
-- [x] Generate a terrain mesh from an `ElevationGrid` using `TerrainMeshGenerator.Generate` — produces a UV-mapped heightfield mesh whose Y coordinates match the sampled elevation data.
-- [x] Add `ElevationGrid.SampleElevation(lat, lon)` — bilinear interpolation across the four nearest grid cells, returning the terrain height at any arbitrary geographic coordinate.
-- [x] Implement `IElevationSource` on `ElevationGrid` — allows a pre-built terrain grid to be passed directly to `OSMParser.ParseAsync` to raise road splines and building footprints to match the terrain surface without additional network requests (Unity scene wiring).
-- See [`Assets/Scripts/Terrain/IElevationSource.cs`](Assets/Scripts/Terrain/IElevationSource.cs),
-  [`Assets/Scripts/Terrain/OpenElevationSource.cs`](Assets/Scripts/Terrain/OpenElevationSource.cs),
-  [`Assets/Scripts/Terrain/ElevationGrid.cs`](Assets/Scripts/Terrain/ElevationGrid.cs), and
-  [`Assets/Scripts/Terrain/TerrainMeshGenerator.cs`](Assets/Scripts/Terrain/TerrainMeshGenerator.cs).
+See [`Assets/Scripts/Terrain/IElevationSource.cs`](Assets/Scripts/Terrain/IElevationSource.cs),
+[`Assets/Scripts/Terrain/OpenElevationSource.cs`](Assets/Scripts/Terrain/OpenElevationSource.cs),
+[`Assets/Scripts/Terrain/ElevationGrid.cs`](Assets/Scripts/Terrain/ElevationGrid.cs), and
+[`Assets/Scripts/Terrain/TerrainMeshGenerator.cs`](Assets/Scripts/Terrain/TerrainMeshGenerator.cs).
 
 ### Phase 8 — Race Logic & HUD ⚠️ In Progress
 
 **Goal:** Turn the open-world drive into a timed race with checkpoints, lap counting, and a results screen.
 
-- [x] Implement `SpeedometerHud` — reads vehicle `Rigidbody` speed and exposes `SpeedMph` for HUD display.
-- [x] Implement `MinimapRenderer` — converts road segments to normalised [0, 1] minimap lines with configurable radius and optional player-yaw rotation.
 - [ ] Build in-scene HUD overlay (canvas with speedometer readout, lap timer, position counter, minimap).
 - [ ] Define race checkpoints along the generated road splines.
 - [ ] Implement lap timing and best-lap tracking.
@@ -156,31 +118,21 @@ project file.
 
 **Goal:** Allow the Unity project to be created and configured entirely from the command line, and automate release builds via GitHub Actions.
 
-- [x] Implement `ProjectSetup.Configure` Editor script callable in batch mode via
-      `-executeMethod TerraDrive.Editor.ProjectSetup.Configure`.
-- [x] Set physics gravity to `(0, -9.81, 0)` and register `Terrain` + `Road` user layers.
-- [x] Expose the same configuration as a **TerraDrive → Configure Project** menu item.
-- [x] Add a **TerraDrive → Load OSM File / Generate Level** menu item (see
-      [`Assets/Scripts/Editor/LoadOsmMenuEditor.cs`](Assets/Scripts/Editor/LoadOsmMenuEditor.cs)) —
-      opens file-picker dialogs for the `.osm` and `.elevation.csv` files, validates the
-      paths via `OsmLevelLoader`, configures the active scene's `MapSceneBuilder`, and
-      optionally enters Play mode.
-- [x] Add `release.yml` GitHub Actions workflow — push to the `release` branch runs tests,
-      builds for Windows/macOS/Linux via `game-ci/unity-builder`, and publishes a GitHub Release.
-- See [`Assets/Scripts/Editor/ProjectSetup.cs`](Assets/Scripts/Editor/ProjectSetup.cs) and
-  [`.github/workflows/release.yml`](.github/workflows/release.yml).
+See [`Assets/Scripts/Editor/ProjectSetup.cs`](Assets/Scripts/Editor/ProjectSetup.cs) and
+[`.github/workflows/release.yml`](.github/workflows/release.yml).
 
 ---
 
 ## Testing
 
-Unit and integration tests live in [`Tests/TerraDrive.Tests/`](Tests/TerraDrive.Tests/) and use NUnit on .NET 8.
+Unit tests live in [`Tests/TerraDrive.Tests/`](Tests/TerraDrive.Tests/) and use NUnit on .NET 8.
 They cover the following modules:
 
 | Test file | Module(s) covered |
 |---|---|
 | `CoordinateConverterTests.cs` | `CoordinateConverter` |
-| `OSMParserTests.cs` | `OSMParser`, `RoadSegment`, `BuildingFootprint` |
+| `OSMParserTests.cs` | `OSMParser`, `RoadSegment`, `BuildingFootprint`, `WaterBody` |
+| `OSMParserRealDataTests.cs` | `OSMParser` against real-format OSM XML |
 | `MapNodeTests.cs` | `MapNode` |
 | `MapWayTests.cs` | `MapWay` |
 | `RoadTypeTests.cs` | `RoadType` |
@@ -190,16 +142,17 @@ They cover the following modules:
 | `BuildingGeneratorTests.cs` | `BuildingGenerator`, `BuildingMeshResult` |
 | `RoadSurfaceDeformerTests.cs` | `RoadSurfaceDeformer` |
 | `RoadsidePropPlacerTests.cs` | `RoadsidePropPlacer`, `PropPlacement`, `PropType` |
+| `WaterMeshGeneratorTests.cs` | `WaterMeshGenerator`, `WaterMeshResult` |
 | `OpenElevationSourceTests.cs` | `OpenElevationSource`, `IElevationSource` |
 | `TerrainMeshGeneratorTests.cs` | `ElevationGrid`, `ElevationGrid.SampleElevation`, `ElevationGrid` as `IElevationSource`, `TerrainMeshGenerator`, `TerrainMeshResult` |
 | `OsmDownloaderTests.cs` | `OsmDownloader` (including elevation grid download, save, and load) |
-| `MapLoaderTests.cs` | `MapLoader`, `MapData` (end-to-end load from `.osm` + `.elevation.csv` → roads, buildings, terrain mesh) |
+| `MapLoaderTests.cs` | `MapLoader`, `MapData` (end-to-end load from `.osm` + `.elevation.csv` → roads, buildings, water bodies, terrain mesh) |
 | `MaterialRegistryTests.cs` | `MaterialRegistry` |
+| `PlaceholderMaterialFactoryTests.cs` | `PlaceholderMaterialFactory` |
 | `SpeedometerTests.cs` | `Speedometer`, `SpeedometerHud` |
 | `MinimapRendererTests.cs` | `MinimapRenderer`, `MinimapLine` |
 | `OsmLevelLoaderTests.cs` | `OsmLevelLoader` (GPS coordinate settings & validation for the **TerraDrive → Load OSM File / Generate Level** editor menu item) |
-| `ChaseCamIntegrationTests.cs` | `ChaseCam` (integration, renders `chase-cam-preview.png`) |
-| `MapRendererIntegrationTests.cs` | `OSMParser` + `SplineGenerator` (integration, renders `map-preview.png`) |
+| `LocationMenuControllerTests.cs` | `LocationMenuController`, `LocationLoadResult` |
 
 ```bash
 dotnet test Tests/TerraDrive.Tests/TerraDrive.Tests.csproj
