@@ -4,6 +4,8 @@ using System.Threading;
 using UnityEngine;
 using TerraDrive.DataInversion;
 using TerraDrive.Procedural;
+using TerraDrive.Terrain;
+using TerraDrive.Vehicle;
 
 namespace TerraDrive.Core
 {
@@ -125,7 +127,7 @@ namespace TerraDrive.Core
 
             foreach (RoadSegment road in map.Roads)
             {
-                BuildRoad(road, map.Region);
+                BuildRoad(road, map.Region, map.TerrainMesh, map.ElevationGrid);
                 yield return null;
             }
 
@@ -141,7 +143,7 @@ namespace TerraDrive.Core
                 yield return null;
             }
 
-            PositionVehicle();
+            PositionVehicle(map);
 
             GameManager.Instance?.SetState(GameState.Racing);
             Debug.Log("[MapSceneBuilder] Level generation complete.");
@@ -165,17 +167,25 @@ namespace TerraDrive.Core
             go.layer = LayerMask.NameToLayer("Terrain");
         }
 
-        private void BuildRoad(RoadSegment road, RegionType region)
+        private void BuildRoad(
+            RoadSegment road,
+            RegionType region,
+            TerrainMeshResult terrainMesh,
+            ElevationGrid elevationGrid)
         {
             if (road.Nodes == null || road.Nodes.Count < 2)
                 return;
 
             RoadType roadType = RoadTypeParser.Parse(road.HighwayType);
-            var      spline   = SplineGenerator.BuildCatmullRom(road.Nodes);
+            var spline = SplineGenerator.BuildCatmullRom(road.Nodes);
+            var deformedSpline = RoadSurfaceDeformer.Deform(
+                spline,
+                roadType,
+                (int)(road.WayId & int.MaxValue));
+            var terrainAlignedSpline = ClampRoadSplineToTerrain(deformedSpline, terrainMesh, elevationGrid);
 
             RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(
-                spline, roadType, region: region,
-                surfaceSeed: (int)(road.WayId & int.MaxValue),
+                terrainAlignedSpline, roadType, region: region,
                 lanes: road.Lanes,
                 isOneWay: road.IsOneWay);
 
@@ -197,6 +207,131 @@ namespace TerraDrive.Core
                 var kerbRenderer = kerbGo.AddComponent<MeshRenderer>();
                 Registry?.ApplyTo(kerbRenderer, result.KerbTextureId);
             }
+        }
+
+        private static Vector3[] ClampRoadSplineToTerrain(
+            System.Collections.Generic.IList<Vector3> spline,
+            TerrainMeshResult terrainMesh,
+            ElevationGrid elevationGrid)
+        {
+            var clamped = new Vector3[spline.Count];
+
+            for (int i = 0; i < spline.Count; i++)
+            {
+                Vector3 point = spline[i];
+                float terrainHeight = SampleRenderedTerrainHeight(point, terrainMesh, elevationGrid);
+                clamped[i] = new Vector3(point.x, Mathf.Max(point.y, terrainHeight), point.z);
+            }
+
+            return clamped;
+        }
+
+        private static float SampleRenderedTerrainHeight(
+            Vector3 worldPoint,
+            TerrainMeshResult terrainMesh,
+            ElevationGrid elevationGrid)
+        {
+            Vector3[] vertices = terrainMesh.Vertices;
+            int rows = elevationGrid.Rows;
+            int cols = elevationGrid.Cols;
+
+            float x = Mathf.Clamp(worldPoint.x, vertices[0].x, vertices[cols - 1].x);
+            float z = Mathf.Clamp(worldPoint.z, vertices[0].z, vertices[(rows - 1) * cols].z);
+
+            int col = FindColumnIndex(vertices, cols, x);
+            int row = FindRowIndex(vertices, rows, cols, z);
+
+            int blIndex = row * cols + col;
+            int brIndex = blIndex + 1;
+            int tlIndex = blIndex + cols;
+            int trIndex = tlIndex + 1;
+
+            Vector3 bl = vertices[blIndex];
+            Vector3 br = vertices[brIndex];
+            Vector3 tl = vertices[tlIndex];
+            Vector3 tr = vertices[trIndex];
+
+            float cellWidth = br.x - bl.x;
+            float cellDepth = tl.z - bl.z;
+            if (Mathf.Approximately(cellWidth, 0f) || Mathf.Approximately(cellDepth, 0f))
+                return bl.y;
+
+            float cellX = Mathf.Clamp01((x - bl.x) / cellWidth);
+            float cellZ = Mathf.Clamp01((z - bl.z) / cellDepth);
+            Vector2 point = new Vector2(x, z);
+
+            return cellZ >= cellX
+                ? InterpolateTriangleHeight(point, bl, tl, tr)
+                : InterpolateTriangleHeight(point, bl, tr, br);
+        }
+
+        private static int FindColumnIndex(Vector3[] vertices, int cols, float x)
+        {
+            int low = 0;
+            int high = cols - 2;
+
+            while (low <= high)
+            {
+                int mid = (low + high) >> 1;
+                float left = vertices[mid].x;
+                float right = vertices[mid + 1].x;
+
+                if (x < left)
+                {
+                    high = mid - 1;
+                }
+                else if (x > right)
+                {
+                    low = mid + 1;
+                }
+                else
+                {
+                    return mid;
+                }
+            }
+
+            return Mathf.Clamp(low, 0, cols - 2);
+        }
+
+        private static int FindRowIndex(Vector3[] vertices, int rows, int cols, float z)
+        {
+            int low = 0;
+            int high = rows - 2;
+
+            while (low <= high)
+            {
+                int mid = (low + high) >> 1;
+                float bottom = vertices[mid * cols].z;
+                float top = vertices[(mid + 1) * cols].z;
+
+                if (z < bottom)
+                {
+                    high = mid - 1;
+                }
+                else if (z > top)
+                {
+                    low = mid + 1;
+                }
+                else
+                {
+                    return mid;
+                }
+            }
+
+            return Mathf.Clamp(low, 0, rows - 2);
+        }
+
+        private static float InterpolateTriangleHeight(Vector2 point, Vector3 a, Vector3 b, Vector3 c)
+        {
+            float denominator = ((b.z - c.z) * (a.x - c.x)) + ((c.x - b.x) * (a.z - c.z));
+            if (Mathf.Approximately(denominator, 0f))
+                return Mathf.Max(a.y, b.y, c.y);
+
+            float wa = (((b.z - c.z) * (point.x - c.x)) + ((c.x - b.x) * (point.y - c.z))) / denominator;
+            float wb = (((c.z - a.z) * (point.x - c.x)) + ((a.x - c.x) * (point.y - c.z))) / denominator;
+            float wc = 1f - wa - wb;
+
+            return (wa * a.y) + (wb * b.y) + (wc * c.y);
         }
 
         private void BuildBuilding(BuildingFootprint building, RegionType region)
@@ -236,11 +371,154 @@ namespace TerraDrive.Core
             go.layer = LayerMask.NameToLayer("Water");
         }
 
-        private void PositionVehicle()
+        // Road types considered drivable for vehicle spawning, in priority order.
+        private static readonly string[] _drivableRoadTypes =
         {
+            "motorway", "trunk", "primary", "secondary", "tertiary",
+            "unclassified", "residential", "living_street", "road"
+        };
+
+        private void PositionVehicle(MapData map)
+        {
+            // If no vehicle was assigned in the Inspector, create a simple box car.
             if (Vehicle == null)
-                return;
-            Vehicle.position = new Vector3(0f, VehicleSpawnHeight, 0f);
+                Vehicle = CreateBoxCar().transform;
+
+            Vector3 spawnPoint = FindRoadSpawnPoint(map);
+            Vehicle.position = spawnPoint;
+            Vehicle.rotation = FindRoadSpawnRotation(map, spawnPoint);
+
+            // Wire the main camera up as a chase camera targeting this vehicle.
+            if (Camera.main != null)
+            {
+                ChaseCam cam = Camera.main.GetComponent<ChaseCam>();
+                if (cam == null)
+                    cam = Camera.main.gameObject.AddComponent<ChaseCam>();
+                cam.target = Vehicle;
+            }
+        }
+
+        /// <summary>
+        /// Picks the midpoint of the drivable road segment whose midpoint is nearest
+        /// to the world origin.  Falls back to any road if no drivable road is found,
+        /// and finally to <c>(0, VehicleSpawnHeight, 0)</c> if there are no roads.
+        /// </summary>
+        private Vector3 FindRoadSpawnPoint(MapData map)
+        {
+            RoadSegment best = FindBestRoadSegment(map);
+            if (best == null)
+                return new Vector3(0f, VehicleSpawnHeight, 0f);
+
+            // Use the midpoint of the segment so the car starts on a straight section.
+            Vector3 mid = best.Nodes[best.Nodes.Count / 2];
+            return new Vector3(mid.x, mid.y + VehicleSpawnHeight, mid.z);
+        }
+
+        /// <summary>
+        /// Returns a rotation aligned with the road direction at the spawn point.
+        /// Falls back to identity if the road has fewer than two nodes.
+        /// </summary>
+        private Quaternion FindRoadSpawnRotation(MapData map, Vector3 spawnPoint)
+        {
+            RoadSegment best = FindBestRoadSegment(map);
+            if (best == null || best.Nodes.Count < 2)
+                return Quaternion.identity;
+
+            int mid = best.Nodes.Count / 2;
+            Vector3 a = best.Nodes[Mathf.Max(mid - 1, 0)];
+            Vector3 b = best.Nodes[Mathf.Min(mid + 1, best.Nodes.Count - 1)];
+            Vector3 dir = new Vector3(b.x - a.x, 0f, b.z - a.z);
+            if (dir.sqrMagnitude < 0.0001f)
+                return Quaternion.identity;
+            return Quaternion.LookRotation(dir.normalized, Vector3.up);
+        }
+
+        private RoadSegment FindBestRoadSegment(MapData map)
+        {
+            if (map.Roads == null || map.Roads.Count == 0)
+                return null;
+
+            // Try each priority level in order; within each level pick the segment
+            // whose midpoint is closest to the world origin.
+            foreach (string roadType in _drivableRoadTypes)
+            {
+                RoadSegment best = null;
+                float bestDist = float.MaxValue;
+
+                foreach (RoadSegment seg in map.Roads)
+                {
+                    if (seg.Nodes == null || seg.Nodes.Count < 2) continue;
+                    if (!string.Equals(seg.HighwayType, roadType,
+                            System.StringComparison.OrdinalIgnoreCase)) continue;
+
+                    Vector3 mid = seg.Nodes[seg.Nodes.Count / 2];
+                    float dist = mid.x * mid.x + mid.z * mid.z; // sqr distance in XZ
+                    if (dist < bestDist)
+                    {
+                        bestDist = dist;
+                        best = seg;
+                    }
+                }
+
+                if (best != null)
+                    return best;
+            }
+
+            // Fallback: any road, closest midpoint to origin.
+            RoadSegment fallback = null;
+            float fallbackDist = float.MaxValue;
+            foreach (RoadSegment seg in map.Roads)
+            {
+                if (seg.Nodes == null || seg.Nodes.Count < 2) continue;
+                Vector3 mid = seg.Nodes[seg.Nodes.Count / 2];
+                float dist = mid.x * mid.x + mid.z * mid.z;
+                if (dist < fallbackDist)
+                {
+                    fallbackDist = dist;
+                    fallback = seg;
+                }
+            }
+            return fallback;
+        }
+
+        /// <summary>
+        /// Builds a minimal "box car" from primitives so the player has something
+        /// visible before a proper vehicle prefab is wired up.
+        /// </summary>
+        private static GameObject CreateBoxCar()
+        {
+            // Root with physics
+            var root = new GameObject("BoxCar");
+            var rb = root.AddComponent<Rigidbody>();
+            rb.mass = 1200f;
+            rb.linearDamping = 0.5f;
+            rb.angularDamping = 5f;
+            rb.centerOfMass = new Vector3(0f, -0.3f, 0f);
+
+            // Body (main visible cube)
+            var body = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            body.name = "Body";
+            body.transform.SetParent(root.transform, false);
+            body.transform.localScale = new Vector3(1.8f, 0.6f, 4f);
+            body.transform.localPosition = new Vector3(0f, 0.3f, 0f);
+            // Body collider handled by the MeshCollider on the root – remove the
+            // auto-added BoxCollider to avoid duplicate physics shapes.
+            Object.Destroy(body.GetComponent<Collider>());
+
+            // Cabin on top
+            var cabin = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cabin.name = "Cabin";
+            cabin.transform.SetParent(root.transform, false);
+            cabin.transform.localScale = new Vector3(1.6f, 0.5f, 2f);
+            cabin.transform.localPosition = new Vector3(0f, 0.85f, 0.1f);
+            Object.Destroy(cabin.GetComponent<Collider>());
+
+            // Single box collider on root covering the whole car
+            var col = root.AddComponent<BoxCollider>();
+            col.size   = new Vector3(1.8f, 1.1f, 4f);
+            col.center = new Vector3(0f, 0.3f, 0f);
+
+            return root;
         }
 
         // ── Helpers ────────────────────────────────────────────────────────────

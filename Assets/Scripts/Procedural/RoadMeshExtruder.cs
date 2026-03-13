@@ -29,6 +29,13 @@ namespace TerraDrive.Procedural
         public const float DefaultKerbHeight = 0.05f;
 
         /// <summary>
+        /// Constant Y offset (in metres) applied to all road vertices so the road
+        /// surface always sits physically above the grass/terrain layer and never
+        /// causes z-fighting regardless of surface-deformer roughness.
+        /// </summary>
+        public const float TerrainClearance = 0.02f;
+
+        /// <summary>
         /// V-axis tile length (metres) used for the lane-marking UV channel (UV1).
         /// Matches a typical UK/US standard dashed-line repeat (3 m dash + 3 m gap = 6 m cycle).
         /// </summary>
@@ -142,8 +149,9 @@ namespace TerraDrive.Procedural
                 // Road-perpendicular direction on the XZ plane.
                 Vector3 right = Vector3.Cross(Vector3.up, tangent).normalized;
 
-                vertices[i * 2]     = splinePoints[i] - right * halfWidth;  // left edge
-                vertices[i * 2 + 1] = splinePoints[i] + right * halfWidth;  // right edge
+                Vector3 centre = splinePoints[i] + Vector3.up * TerrainClearance;
+                vertices[i * 2]     = centre - right * halfWidth;  // left edge
+                vertices[i * 2 + 1] = centre + right * halfWidth;  // right edge
 
                 // Accumulate road distance for V-coordinate tiling.
                 if (i > 0)
@@ -310,6 +318,12 @@ namespace TerraDrive.Procedural
             IList<Vector3> pts = surfaceSeed.HasValue
                 ? RoadSurfaceDeformer.Deform(splinePoints, roadType, surfaceSeed.Value)
                 : splinePoints;
+
+            // Lift the road above the grass/terrain layer to prevent z-fighting.
+            var liftedPts = new Vector3[pts.Count];
+            for (int i = 0; i < pts.Count; i++)
+                liftedPts[i] = new Vector3(pts[i].x, pts[i].y + TerrainClearance, pts[i].z);
+            pts = liftedPts;
 
             int n = pts.Count;
             float halfWidth = roadWidth * 0.5f;

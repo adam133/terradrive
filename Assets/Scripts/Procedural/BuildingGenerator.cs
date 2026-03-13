@@ -53,8 +53,8 @@ namespace TerraDrive.Procedural
         /// </returns>
         public static BuildingMeshResult Extrude(
             IList<Vector3> footprint,
-            float minHeight = 5f,
-            float maxHeight = 15f,
+            float minHeight = 4f,
+            float maxHeight = 6f,
             long wayId = 0,
             RegionType region = RegionType.Unknown)
         {
@@ -114,8 +114,8 @@ namespace TerraDrive.Procedural
                 // Bottom-left, bottom-right, top-left, top-right
                 verts.Add(a);
                 verts.Add(b);
-                verts.Add(new Vector3(a.x, height, a.z));
-                verts.Add(new Vector3(b.x, height, b.z));
+                verts.Add(new Vector3(a.x, a.y + height, a.z));
+                verts.Add(new Vector3(b.x, b.y + height, b.z));
 
                 uvs.Add(new Vector2(0f, 0f));
                 uvs.Add(new Vector2(wallWidth * WallUvScale, 0f));
@@ -153,14 +153,14 @@ namespace TerraDrive.Procedural
             foreach (var p in footprint)
                 centroid += p;
             centroid /= n;
-            centroid.y = height;
+            centroid.y += height;
 
             verts.Add(centroid);
             uvs.Add(new Vector2(0.5f, 0.5f));
 
             foreach (var p in footprint)
             {
-                verts.Add(new Vector3(p.x, height, p.z));
+                verts.Add(new Vector3(p.x, p.y + height, p.z));
                 uvs.Add(new Vector2(p.x * 0.05f, p.z * 0.05f));
             }
 
