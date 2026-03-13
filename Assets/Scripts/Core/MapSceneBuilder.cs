@@ -384,6 +384,8 @@ namespace TerraDrive.Core
             if (Vehicle == null)
                 Vehicle = CreateBoxCar().transform;
 
+            EnsureDriveableVehicle(Vehicle.gameObject);
+
             Vector3 spawnPoint = FindRoadSpawnPoint(map);
             Vehicle.position = spawnPoint;
             Vehicle.rotation = FindRoadSpawnRotation(map, spawnPoint);
@@ -513,12 +515,171 @@ namespace TerraDrive.Core
             cabin.transform.localPosition = new Vector3(0f, 0.85f, 0.1f);
             Object.Destroy(cabin.GetComponent<Collider>());
 
-            // Single box collider on root covering the whole car
+            // Body/obstacle collider – deliberately kept ABOVE the wheel contact
+            // patch so it never holds the vehicle off the ground before the
+            // WheelColliders can make contact.
+            // Wheel-contact math (from EnsureDriveableVehicle):
+            //   center  y = 0.35,  suspensionDist = 0.2,  targetPos = 0.5
+            //   rest offset = 0.5 × 0.2 = 0.10  →  wheel-centre at  0.25
+            //   contact patch at   0.25 − 0.35 (radius) = −0.10 below root
+            // BoxCollider bottom must be > −0.10 so the wheels hit first.
             var col = root.AddComponent<BoxCollider>();
-            col.size   = new Vector3(1.8f, 1.1f, 4f);
-            col.center = new Vector3(0f, 0.3f, 0f);
+            col.size   = new Vector3(1.8f, 0.8f, 4f);   // 0.8 tall (was 1.1)
+            col.center = new Vector3(0f, 0.55f, 0f);     // bottom = 0.55−0.40 = +0.15 above root
+
+            EnsureDriveableVehicle(root);
 
             return root;
+        }
+
+        private static void EnsureDriveableVehicle(GameObject vehicleRoot)
+        {
+            if (vehicleRoot == null)
+                return;
+
+            if (vehicleRoot.GetComponent<Rigidbody>() == null)
+            {
+                var rb = vehicleRoot.AddComponent<Rigidbody>();
+                rb.mass = 1200f;
+                rb.linearDamping = 0.5f;
+                rb.angularDamping = 5f;
+            }
+
+            var controller = vehicleRoot.GetComponent<CarController>();
+            if (controller == null)
+                controller = vehicleRoot.AddComponent<CarController>();
+
+            if (HasCompleteWheelSetup(controller))
+                return;
+
+            Transform wheelRoot = vehicleRoot.transform.Find("GeneratedWheels");
+            if (wheelRoot == null)
+            {
+                wheelRoot = new GameObject("GeneratedWheels").transform;
+                wheelRoot.SetParent(vehicleRoot.transform, false);
+            }
+
+            SetupWheel(controller, wheelRoot, "FrontLeft", new Vector3(-0.9f, 0.35f, 1.35f), true);
+            SetupWheel(controller, wheelRoot, "FrontRight", new Vector3(0.9f, 0.35f, 1.35f), true);
+            SetupWheel(controller, wheelRoot, "RearLeft", new Vector3(-0.9f, 0.35f, -1.35f), false);
+            SetupWheel(controller, wheelRoot, "RearRight", new Vector3(0.9f, 0.35f, -1.35f), false);
+
+            controller.motorTorque = 2200f;
+            controller.brakeTorque = 3500f;
+            controller.maxSteerAngle = 28f;
+            controller.normalFriction = 1.3f;
+            controller.driftFriction = 0.55f;
+            controller.antiRollStiffness = 6500f;
+        }
+
+        private static bool HasCompleteWheelSetup(CarController controller)
+        {
+            return controller != null
+                && controller.frontLeftCollider != null
+                && controller.frontRightCollider != null
+                && controller.rearLeftCollider != null
+                && controller.rearRightCollider != null
+                && controller.frontLeftMesh != null
+                && controller.frontRightMesh != null
+                && controller.rearLeftMesh != null
+                && controller.rearRightMesh != null;
+        }
+
+        private static void SetupWheel(
+            CarController controller,
+            Transform wheelRoot,
+            string wheelName,
+            Vector3 localPosition,
+            bool steer)
+        {
+            Transform mount = wheelRoot.Find(wheelName);
+            if (mount == null)
+            {
+                mount = new GameObject(wheelName).transform;
+                mount.SetParent(wheelRoot, false);
+            }
+
+            mount.localPosition = localPosition;
+            mount.localRotation = Quaternion.identity;
+
+            var collider = mount.GetComponent<WheelCollider>();
+            if (collider == null)
+                collider = mount.gameObject.AddComponent<WheelCollider>();
+
+            ConfigureWheelCollider(collider, steer);
+
+            Transform mesh = mount.Find("Mesh");
+            if (mesh == null)
+            {
+                var wheelVisual = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                wheelVisual.name = "Mesh";
+                mesh = wheelVisual.transform;
+                mesh.SetParent(mount, false);
+                Object.Destroy(wheelVisual.GetComponent<Collider>());
+            }
+
+            mesh.localPosition = Vector3.zero;
+            mesh.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            mesh.localScale = new Vector3(0.35f, 0.14f, 0.35f);
+
+            AssignWheel(controller, wheelName, collider, mesh);
+        }
+
+        private static void ConfigureWheelCollider(WheelCollider collider, bool steer)
+        {
+            collider.radius = 0.35f;
+            collider.mass = 22f;
+            collider.suspensionDistance = 0.2f;
+            collider.forceAppPointDistance = 0.1f;
+
+            JointSpring suspension = collider.suspensionSpring;
+            suspension.spring = 30000f;
+            suspension.damper = 4500f;
+            suspension.targetPosition = 0.5f;
+            collider.suspensionSpring = suspension;
+
+            WheelFrictionCurve forward = collider.forwardFriction;
+            forward.extremumSlip = 0.4f;
+            forward.extremumValue = 1f;
+            forward.asymptoteSlip = 0.8f;
+            forward.asymptoteValue = 0.75f;
+            forward.stiffness = 1.2f;
+            collider.forwardFriction = forward;
+
+            WheelFrictionCurve sideways = collider.sidewaysFriction;
+            sideways.extremumSlip = 0.25f;
+            sideways.extremumValue = 1f;
+            sideways.asymptoteSlip = 0.5f;
+            sideways.asymptoteValue = 0.75f;
+            sideways.stiffness = steer ? 1.2f : 1.3f;
+            collider.sidewaysFriction = sideways;
+        }
+
+        private static void AssignWheel(
+            CarController controller,
+            string wheelName,
+            WheelCollider collider,
+            Transform mesh)
+        {
+            switch (wheelName)
+            {
+                case "FrontLeft":
+                    controller.frontLeftCollider = collider;
+                    controller.frontLeftMesh = mesh;
+                    break;
+                case "FrontRight":
+                    controller.frontRightCollider = collider;
+                    controller.frontRightMesh = mesh;
+                    break;
+                case "RearLeft":
+                    controller.rearLeftCollider = collider;
+                    controller.rearLeftMesh = mesh;
+                    break;
+                case "RearRight":
+                    controller.rearRightCollider = collider;
+                    controller.rearRightMesh = mesh;
+                    break;
+            }
         }
 
         // ── Helpers ────────────────────────────────────────────────────────────

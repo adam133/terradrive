@@ -70,6 +70,9 @@ namespace TerraDrive.Vehicle
 
         private void FixedUpdate()
         {
+            if (!HasWheelSetup())
+                return;
+
             float throttle = Input.GetAxis("Vertical");
             float steer = Input.GetAxis("Horizontal");
             bool handbrake = Input.GetKey(KeyCode.Space);
@@ -84,10 +87,22 @@ namespace TerraDrive.Vehicle
 
         private void Update()
         {
+            if (!HasWheelSetup())
+                return;
+
             UpdateWheelMesh(frontLeftCollider, frontLeftMesh);
             UpdateWheelMesh(frontRightCollider, frontRightMesh);
             UpdateWheelMesh(rearLeftCollider, rearLeftMesh);
             UpdateWheelMesh(rearRightCollider, rearRightMesh);
+        }
+
+        private bool HasWheelSetup()
+        {
+            return _rb != null
+                && frontLeftCollider != null
+                && frontRightCollider != null
+                && rearLeftCollider != null
+                && rearRightCollider != null;
         }
 
         // ── Drive helpers ──────────────────────────────────────────────────────
