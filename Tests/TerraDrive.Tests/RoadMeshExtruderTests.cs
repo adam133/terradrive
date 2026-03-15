@@ -314,13 +314,15 @@ namespace TerraDrive.Tests
         [Test]
         public void ExtrudeWithDetails_KerbMesh_IsElevatedAboveRoadSurface()
         {
-            // Spline is at Y = 0; kerb vertices should be at Y = kerbHeight > 0.
+            // Spline is at Y = 0; kerb vertices should be at Y = TerrainClearance + kerbHeight.
+            // TerrainClearance is added by ExtrudeWithDetails to prevent z-fighting with terrain.
             RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(
                 TwoPoints, 7f,
                 kerbHeight: RoadMeshExtruder.DefaultKerbHeight);
 
+            float expectedY = RoadMeshExtruder.TerrainClearance + RoadMeshExtruder.DefaultKerbHeight;
             foreach (var v in result.KerbMesh.Vertices)
-                Assert.That(v.y, Is.EqualTo(RoadMeshExtruder.DefaultKerbHeight).Within(1e-4f),
+                Assert.That(v.y, Is.EqualTo(expectedY).Within(1e-4f),
                     "Every kerb vertex should be elevated above the road plane.");
         }
 

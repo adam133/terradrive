@@ -231,12 +231,13 @@ namespace TerraDrive.Tests
         [Test]
         public void ExtrudeWithDetails_NoSeed_RoadMesh_IsFlat()
         {
-            // Without a seed the road surface must remain flat (Y = 0 for flat input spline).
+            // Without a seed the road surface must remain flat.
+            // Y is offset by TerrainClearance (applied to prevent z-fighting with terrain).
             RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(StraightRoad, RoadType.Residential);
 
             foreach (var v in result.RoadMesh.Vertices)
-                Assert.That(v.y, Is.EqualTo(0f).Within(1e-5f),
-                    "Road vertex Y must be 0 when no surfaceSeed is provided.");
+                Assert.That(v.y, Is.EqualTo(RoadMeshExtruder.TerrainClearance).Within(1e-5f),
+                    "Road vertex Y must equal TerrainClearance when no surfaceSeed is provided.");
         }
 
         [Test]
