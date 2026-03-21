@@ -67,7 +67,7 @@ namespace TerraDrive.Hud
         private CancellationTokenSource _cts;
 
         // GUI window rect (computed once on first show)
-        private static readonly Vector2 DialogSize = new Vector2(420f, 200f);
+        private static readonly Vector2 DialogSize = new Vector2(420f, 250f);
 
         // Cached overlay texture to avoid per-frame allocations in OnGUI.
         private Texture2D _overlayTexture;
@@ -204,6 +204,23 @@ namespace TerraDrive.Hud
 
             GUILayout.EndHorizontal();
 
+            GUILayout.Space(4);
+
+            // ── Extra actions ──
+            GUILayout.BeginHorizontal();
+
+            GUI.enabled = !_isLoading;
+            if (GUILayout.Button("Reset Car", GUILayout.Height(26)))
+            {
+                ResetCar();
+                Hide();
+            }
+            if (GUILayout.Button("Exit Game", GUILayout.Height(26)))
+                QuitGame();
+            GUI.enabled = true;
+
+            GUILayout.EndHorizontal();
+
             // ── Status message ──
             if (!string.IsNullOrEmpty(_statusMessage))
             {
@@ -324,6 +341,32 @@ namespace TerraDrive.Hud
             tex.SetPixel(0, 0, colour);
             tex.Apply();
             return tex;
+        }
+
+        /// <summary>
+        /// Teleports the vehicle to the nearest drivable road by delegating to
+        /// <see cref="MapSceneBuilder.ResetVehicle"/>.
+        /// </summary>
+        private static void ResetCar()
+        {
+            var builder = FindFirstObjectByType<MapSceneBuilder>();
+            if (builder != null)
+                builder.ResetVehicle();
+            else
+                Debug.LogWarning("[CoordinateEntryHud] ResetCar: no MapSceneBuilder found in scene.");
+        }
+
+        /// <summary>
+        /// Exits the game.  In the Unity Editor this stops Play mode; in a
+        /// standalone build it calls <see cref="Application.Quit"/>.
+        /// </summary>
+        private static void QuitGame()
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
         }
     }
 }

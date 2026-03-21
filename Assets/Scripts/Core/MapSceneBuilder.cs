@@ -81,6 +81,7 @@ namespace TerraDrive.Core
         // ── Private state ──────────────────────────────────────────────────────
 
         private CancellationTokenSource _cts;
+        private MapData _builtMapData;
 
         // ── Unity lifecycle ────────────────────────────────────────────────────
 
@@ -203,6 +204,7 @@ namespace TerraDrive.Core
             }
 
             PositionVehicle(map);
+            _builtMapData = map;
 
             GameManager.Instance?.SetState(GameState.Racing);
             Debug.Log("[MapSceneBuilder] Level generation complete.");
@@ -558,7 +560,7 @@ namespace TerraDrive.Core
         /// </summary>
         private Vector3 FindRoadSpawnPoint(MapData map)
         {
-            RoadSegment best = FindBestRoadSegment(map);
+            RoadSegment best = FindNearestRoadSegment(map, Vector3.zero);
             if (best == null)
                 return new Vector3(0f, VehicleSpawnHeight, 0f);
 
@@ -573,7 +575,7 @@ namespace TerraDrive.Core
         /// </summary>
         private Quaternion FindRoadSpawnRotation(MapData map, Vector3 spawnPoint)
         {
-            RoadSegment best = FindBestRoadSegment(map);
+            RoadSegment best = FindNearestRoadSegment(map, Vector3.zero);
             if (best == null || best.Nodes.Count < 2)
                 return Quaternion.identity;
 
@@ -586,7 +588,13 @@ namespace TerraDrive.Core
             return Quaternion.LookRotation(dir.normalized, Vector3.up);
         }
 
-        private RoadSegment FindBestRoadSegment(MapData map)
+        /// <summary>
+        /// Returns the drivable <see cref="RoadSegment"/> whose midpoint is closest
+        /// to <paramref name="referencePoint"/> in the XZ plane.  Drivable road types
+        /// are tried in priority order; falls back to any road if none match, and to
+        /// <c>null</c> if the map has no roads at all.
+        /// </summary>
+        private RoadSegment FindNearestRoadSegment(MapData map, Vector3 referencePoint)
         {
             if (map.Roads == null || map.Roads.Count == 0)
                 return null;
@@ -605,7 +613,9 @@ namespace TerraDrive.Core
                             System.StringComparison.OrdinalIgnoreCase)) continue;
 
                     Vector3 mid = seg.Nodes[seg.Nodes.Count / 2];
-                    float dist = mid.x * mid.x + mid.z * mid.z; // sqr distance in XZ
+                    float dx = mid.x - referencePoint.x;
+                    float dz = mid.z - referencePoint.z;
+                    float dist = dx * dx + dz * dz; // sqr distance in XZ
                     if (dist < bestDist)
                     {
                         bestDist = dist;
@@ -617,14 +627,16 @@ namespace TerraDrive.Core
                     return best;
             }
 
-            // Fallback: any road, closest midpoint to origin.
+            // Fallback: any road, closest midpoint to referencePoint.
             RoadSegment fallback = null;
             float fallbackDist = float.MaxValue;
             foreach (RoadSegment seg in map.Roads)
             {
                 if (seg.Nodes == null || seg.Nodes.Count < 2) continue;
                 Vector3 mid = seg.Nodes[seg.Nodes.Count / 2];
-                float dist = mid.x * mid.x + mid.z * mid.z;
+                float dx = mid.x - referencePoint.x;
+                float dz = mid.z - referencePoint.z;
+                float dist = dx * dx + dz * dz;
                 if (dist < fallbackDist)
                 {
                     fallbackDist = dist;
@@ -632,6 +644,41 @@ namespace TerraDrive.Core
                 }
             }
             return fallback;
+        }
+
+        /// <summary>
+        /// Teleports the vehicle to the drivable road segment nearest to its current
+        /// XZ position, clears all velocity, and faces the car along the road.
+        /// This mirrors the initial spawn logic that runs when the scene first loads.
+        /// </summary>
+        public void ResetVehicle()
+        {
+            if (Vehicle == null || _builtMapData == null)
+                return;
+
+            Vector3 currentPos = Vehicle.position;
+            RoadSegment nearest = FindNearestRoadSegment(_builtMapData, currentPos);
+            if (nearest == null)
+                return;
+
+            int midIdx = nearest.Nodes.Count / 2;
+            Vector3 mid = nearest.Nodes[midIdx];
+            Vehicle.position = new Vector3(mid.x, mid.y + VehicleSpawnHeight, mid.z);
+
+            // Face the car along the road direction.
+            Vector3 a = nearest.Nodes[Mathf.Max(midIdx - 1, 0)];
+            Vector3 b = nearest.Nodes[Mathf.Min(midIdx + 1, nearest.Nodes.Count - 1)];
+            Vector3 dir = new Vector3(b.x - a.x, 0f, b.z - a.z);
+            if (dir.sqrMagnitude >= 0.0001f)
+                Vehicle.rotation = Quaternion.LookRotation(dir.normalized, Vector3.up);
+
+            // Stop all motion so the car doesn't carry over its previous velocity.
+            var rb = Vehicle.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity  = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
         }
 
         /// <summary>
