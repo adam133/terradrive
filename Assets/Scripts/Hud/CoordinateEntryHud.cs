@@ -57,9 +57,8 @@ namespace TerraDrive.Hud
         private bool   _isVisible;
         private bool   _isLoading;
 
-        private string _latStr  = string.Empty;
-        private string _lonStr  = string.Empty;
-        private string _radStr  = string.Empty;
+        private string _coordsStr = string.Empty;
+        private string _radStr    = string.Empty;
 
         private string _statusMessage = string.Empty;
         private bool   _statusIsError;
@@ -67,7 +66,7 @@ namespace TerraDrive.Hud
         private CancellationTokenSource _cts;
 
         // GUI window rect (computed once on first show)
-        private static readonly Vector2 DialogSize = new Vector2(420f, 250f);
+        private static readonly Vector2 DialogSize = new Vector2(420f, 230f);
 
         // Cached overlay texture to avoid per-frame allocations in OnGUI.
         private Texture2D _overlayTexture;
@@ -119,8 +118,7 @@ namespace TerraDrive.Hud
                 ? GameManager.Instance.OriginLongitude
                 : DefaultLongitude;
 
-            _latStr = lat.ToString("F6", CultureInfo.InvariantCulture);
-            _lonStr = lon.ToString("F6", CultureInfo.InvariantCulture);
+            _coordsStr = $"{lat.ToString("F6", CultureInfo.InvariantCulture)}, {lon.ToString("F6", CultureInfo.InvariantCulture)}";
             _radStr = DefaultRadius.ToString(CultureInfo.InvariantCulture);
 
             _statusMessage = string.Empty;
@@ -161,21 +159,15 @@ namespace TerraDrive.Hud
         {
             GUILayout.Space(6);
 
-            // ── Latitude ──
+            // ── Coordinates (lat, lon) ──
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Latitude:", GUILayout.Width(110));
+            GUILayout.Label("Coordinates:", GUILayout.Width(110));
             GUI.enabled = !_isLoading;
-            _latStr = GUILayout.TextField(_latStr);
+            _coordsStr = GUILayout.TextField(_coordsStr);
             GUI.enabled = true;
             GUILayout.EndHorizontal();
 
-            // ── Longitude ──
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Longitude:", GUILayout.Width(110));
-            GUI.enabled = !_isLoading;
-            _lonStr = GUILayout.TextField(_lonStr);
-            GUI.enabled = true;
-            GUILayout.EndHorizontal();
+            GUILayout.Label("e.g. 51.5074, -0.1278", new GUIStyle(GUI.skin.label) { fontSize = 10, normal = { textColor = new Color(0.6f, 0.6f, 0.6f) } });
 
             // ── Radius ──
             GUILayout.BeginHorizontal();
@@ -235,11 +227,15 @@ namespace TerraDrive.Hud
 
         private void StartLoad()
         {
-            if (!double.TryParse(_latStr, NumberStyles.Float, CultureInfo.InvariantCulture, out double lat) ||
-                !double.TryParse(_lonStr, NumberStyles.Float, CultureInfo.InvariantCulture, out double lon) ||
-                !int.TryParse(_radStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int rad))
+            if (!OsmLevelLoader.TryParseCoordinates(_coordsStr, out double lat, out double lon))
             {
-                SetStatus("Invalid number format — use decimal notation, e.g. 51.5074", isError: true);
+                SetStatus("Invalid coordinates — enter as \"lat, lon\", e.g. 51.5074, -0.1278", isError: true);
+                return;
+            }
+
+            if (!int.TryParse(_radStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int rad))
+            {
+                SetStatus("Invalid radius — use a whole number, e.g. 500", isError: true);
                 return;
             }
 

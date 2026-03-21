@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace TerraDrive.Core
 {
@@ -89,5 +90,38 @@ namespace TerraDrive.Core
         /// Returns <c>true</c> when <see cref="Validate"/> produces no errors.
         /// </summary>
         public bool IsValid() => Validate().Count == 0;
+
+        // ── Coordinate parsing ─────────────────────────────────────────────────
+
+        /// <summary>
+        /// Tries to parse a coordinate string of the form <c>"lat, lon"</c> (whitespace
+        /// around the comma is ignored) into separate latitude and longitude values.
+        /// Both parts must be valid decimal numbers.
+        /// </summary>
+        /// <param name="input">Raw text entered by the user, e.g. <c>"51.5074, -0.1278"</c>.</param>
+        /// <param name="lat">Parsed latitude on success; <c>0</c> otherwise.</param>
+        /// <param name="lon">Parsed longitude on success; <c>0</c> otherwise.</param>
+        /// <returns>
+        /// <c>true</c> when <paramref name="input"/> contains exactly one comma that
+        /// separates two parseable decimal numbers; <c>false</c> otherwise.
+        /// </returns>
+        public static bool TryParseCoordinates(string input, out double lat, out double lon)
+        {
+            lat = 0;
+            lon = 0;
+
+            if (string.IsNullOrWhiteSpace(input))
+                return false;
+
+            int commaIndex = input.IndexOf(',');
+            if (commaIndex < 0)
+                return false;
+
+            string latPart = input.Substring(0, commaIndex).Trim();
+            string lonPart = input.Substring(commaIndex + 1).Trim();
+
+            return double.TryParse(latPart, NumberStyles.Float, CultureInfo.InvariantCulture, out lat)
+                && double.TryParse(lonPart, NumberStyles.Float, CultureInfo.InvariantCulture, out lon);
+        }
     }
 }
