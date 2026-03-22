@@ -157,6 +157,26 @@ namespace VectorRoad.Procedural
             };
         }
 
+        // ── Roadside ditch ─────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Returns the texture identifier for the roadside ditch surface appropriate to
+        /// the given climate region.  Ditches appear on rural roads and are typically
+        /// covered with grass or bare earth.
+        /// </summary>
+        /// <param name="region">Climate zone of the map area.</param>
+        /// <returns>A lowercase underscore-separated texture asset name.</returns>
+        public static string GetDitchTextureId(RegionType region)
+        {
+            return region switch
+            {
+                RegionType.Desert   => "terrain_sand",
+                RegionType.Arctic   => "terrain_snow",
+                RegionType.Tropical => "terrain_mud",
+                _                   => "terrain_grass",
+            };
+        }
+
         // ── Private helpers ────────────────────────────────────────────────────
 
         /// <summary>

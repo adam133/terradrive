@@ -269,6 +269,17 @@ namespace VectorRoad.Core
             surfaceGo.AddComponent<MeshCollider>().sharedMesh = result.RoadMesh;
             surfaceGo.layer = LayerMask.NameToLayer("Road");
 
+            if (result.LaneMarkingMesh != null && result.LaneMarkingMesh.vertexCount > 0
+                && !string.IsNullOrEmpty(result.LaneMarkingTextureId))
+            {
+                var laneGo = new GameObject("LaneMarking");
+                laneGo.transform.SetParent(parent.transform, false);
+                laneGo.AddComponent<MeshFilter>().sharedMesh = result.LaneMarkingMesh;
+                var laneRenderer = laneGo.AddComponent<MeshRenderer>();
+                Registry?.ApplyTo(laneRenderer, result.LaneMarkingTextureId);
+                laneGo.layer = LayerMask.NameToLayer("Road");
+            }
+
             if (result.KerbMesh != null && result.KerbMesh.vertexCount > 0)
             {
                 var kerbGo = new GameObject("Kerb");
@@ -276,6 +287,16 @@ namespace VectorRoad.Core
                 kerbGo.AddComponent<MeshFilter>().sharedMesh = result.KerbMesh;
                 var kerbRenderer = kerbGo.AddComponent<MeshRenderer>();
                 Registry?.ApplyTo(kerbRenderer, result.KerbTextureId);
+            }
+
+            if (result.DitchMesh != null && result.DitchMesh.vertexCount > 0
+                && !string.IsNullOrEmpty(result.DitchTextureId))
+            {
+                var ditchGo = new GameObject("Ditch");
+                ditchGo.transform.SetParent(parent.transform, false);
+                ditchGo.AddComponent<MeshFilter>().sharedMesh = result.DitchMesh;
+                var ditchRenderer = ditchGo.AddComponent<MeshRenderer>();
+                Registry?.ApplyTo(ditchRenderer, result.DitchTextureId);
             }
         }
 
