@@ -4,13 +4,13 @@ using System.Threading;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TerraDrive.DataInversion;
-using TerraDrive.Hud;
-using TerraDrive.Procedural;
-using TerraDrive.Terrain;
-using TerraDrive.Vehicle;
+using VectorRoad.DataInversion;
+using VectorRoad.Hud;
+using VectorRoad.Procedural;
+using VectorRoad.Terrain;
+using VectorRoad.Vehicle;
 
-namespace TerraDrive.Core
+namespace VectorRoad.Core
 {
     /// <summary>
     /// Loads a pre-downloaded OSM map at startup and instantiates all scene geometry

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace TerraDrive.DataInversion
+namespace VectorRoad.DataInversion
 {
     /// <summary>
     /// Represents a water body parsed from an OSM closed-way polygon (e.g. lake, pond,

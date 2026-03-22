@@ -1,0 +1,5 @@
+﻿<Solution>
+  <Project Path="Tools.csproj" />
+  <Project Path="VectorRoad.Tests.PlayMode.csproj" />
+  <Project Path="VectorRoad.Tests.EditMode.csproj" />
+</Solution>

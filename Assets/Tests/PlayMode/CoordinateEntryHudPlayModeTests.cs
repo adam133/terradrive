@@ -3,9 +3,9 @@ using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
-using TerraDrive.Hud;
+using VectorRoad.Hud;
 
-namespace TerraDrive.Tests.PlayMode
+namespace VectorRoad.Tests.PlayMode
 {
     /// <summary>
     /// Play-mode tests for <see cref="CoordinateEntryHud"/> dialog toggle logic.

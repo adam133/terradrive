@@ -1,5 +1,5 @@
 {
-  "name": "TerraDrive",
+  "name": "VectorRoad",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
 
   // Install .NET 8 SDK via the official devcontainer feature
@@ -18,12 +18,12 @@
         // GitHub Copilot – inline suggestions + chat panel
         "github.copilot",
         "github.copilot-chat",
-        // C# language support and rich editing for the TerraDrive codebase
+        // C# language support and rich editing for the VectorRoad codebase
         "ms-dotnettools.csdevkit",
         "ms-dotnettools.csharp"
       ],
       "settings": {
-        "dotnet.defaultSolution": "terradrive.slnx",
+        "dotnet.defaultSolution": "vectorroad.slnx",
         "github.copilot.enable": {
           "*": true
         }

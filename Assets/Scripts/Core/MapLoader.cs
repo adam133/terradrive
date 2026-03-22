@@ -1,9 +1,9 @@
 using System.Threading;
 using System.Threading.Tasks;
-using TerraDrive.DataInversion;
-using TerraDrive.Terrain;
+using VectorRoad.DataInversion;
+using VectorRoad.Terrain;
 
-namespace TerraDrive.Core
+namespace VectorRoad.Core
 {
     /// <summary>
     /// Loads a full map scene from a pre-downloaded <c>.osm</c> and

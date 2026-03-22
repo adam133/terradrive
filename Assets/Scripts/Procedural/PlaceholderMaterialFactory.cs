@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace TerraDrive.Procedural
+namespace VectorRoad.Procedural
 {
     /// <summary>
     /// Creates solid-colour placeholder <c>Material</c> objects for every known texture

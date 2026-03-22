@@ -1,5 +1,0 @@
-﻿<Solution>
-  <Project Path="Tools.csproj" />
-  <Project Path="TerraDrive.Tests.PlayMode.csproj" />
-  <Project Path="TerraDrive.Tests.EditMode.csproj" />
-</Solution>

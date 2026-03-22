@@ -5,10 +5,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using TerraDrive.Core;
-using TerraDrive.Tools;
+using VectorRoad.Core;
+using VectorRoad.Tools;
 
-namespace TerraDrive.Hud
+namespace VectorRoad.Hud
 {
     /// <summary>
     /// In-game HUD component that shows a coordinate-entry dialog so the player can
@@ -265,7 +265,7 @@ namespace TerraDrive.Hud
 
             try
             {
-                string dataDir = Path.Combine(Path.GetTempPath(), "terradrive");
+                string dataDir = Path.Combine(Path.GetTempPath(), "vectorroad");
                 Directory.CreateDirectory(dataDir);
 
                 string osmPath  = Path.Combine(dataDir, "current.osm");
@@ -283,7 +283,7 @@ namespace TerraDrive.Hud
 
                 // 2. Download DEM elevation grid.
                 SetStatus("Downloading elevation data…");
-                TerraDrive.Terrain.ElevationGrid elevGrid = await downloader
+                VectorRoad.Terrain.ElevationGrid elevGrid = await downloader
                     .DownloadElevationGridAsync(lat, lon, rad, cancellationToken: ct)
                     .ConfigureAwait(true);
 

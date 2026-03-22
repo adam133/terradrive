@@ -1,4 +1,4 @@
-namespace TerraDrive.Vehicle
+namespace VectorRoad.Vehicle
 {
     /// <summary>
     /// Speed conversion utilities used by the digital speedometer HUD.

@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using TerraDrive.DataInversion;
+using VectorRoad.DataInversion;
 
-namespace TerraDrive.Procedural
+namespace VectorRoad.Procedural
 {
     /// <summary>
     /// Extrudes OSM building footprint polygons into 3D wall and roof meshes,

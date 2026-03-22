@@ -1,12 +1,12 @@
 using NUnit.Framework;
-using TerraDrive.Core;
+using VectorRoad.Core;
 
-namespace TerraDrive.Tests
+namespace VectorRoad.Tests
 {
     /// <summary>
     /// Unit tests for <see cref="OsmLevelLoader"/> — the pure-C# helper that validates
     /// GPS-coordinate settings for the
-    /// <b>TerraDrive → Load OSM File / Generate Level</b> editor menu item.
+    /// <b>VectorRoad → Load OSM File / Generate Level</b> editor menu item.
     /// </summary>
     [TestFixture]
     public class OsmLevelLoaderTests

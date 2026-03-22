@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using TerraDrive.DataInversion;
+using VectorRoad.DataInversion;
 
-namespace TerraDrive.Hud
+namespace VectorRoad.Hud
 {
     /// <summary>
     /// Renders the <see cref="MinimapRenderer"/> output onto a UI <see cref="RawImage"/>
@@ -11,9 +11,9 @@ namespace TerraDrive.Hud
     ///
     /// <para>
     /// Attach to any persistent GameObject (e.g. the same one that holds
-    /// <see cref="TerraDrive.Core.MapSceneBuilder"/>), assign a <see cref="RawImage"/>
+    /// <see cref="VectorRoad.Core.MapSceneBuilder"/>), assign a <see cref="RawImage"/>
     /// from the HUD Canvas to <see cref="Target"/>, then wait for
-    /// <see cref="TerraDrive.Core.MapSceneBuilder"/> to call <see cref="Init"/> once
+    /// <see cref="VectorRoad.Core.MapSceneBuilder"/> to call <see cref="Init"/> once
     /// the map has loaded.
     /// </para>
     /// </summary>
@@ -47,7 +47,7 @@ namespace TerraDrive.Hud
         /// <summary>
         /// Supplies the vehicle <see cref="Transform"/> used as the map centre and the
         /// road segments to draw each frame.
-        /// Called by <see cref="TerraDrive.Core.MapSceneBuilder"/> after the map loads.
+        /// Called by <see cref="VectorRoad.Core.MapSceneBuilder"/> after the map loads.
         /// </summary>
         public void Init(Transform vehicle, IEnumerable<RoadSegment> roads)
         {

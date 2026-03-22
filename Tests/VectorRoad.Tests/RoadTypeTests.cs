@@ -1,8 +1,8 @@
 using System;
 using NUnit.Framework;
-using TerraDrive.DataInversion;
+using VectorRoad.DataInversion;
 
-namespace TerraDrive.Tests
+namespace VectorRoad.Tests
 {
     [TestFixture]
     public class RoadTypeTests

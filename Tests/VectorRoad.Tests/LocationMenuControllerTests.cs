@@ -3,12 +3,12 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
-using TerraDrive.Core;
-using TerraDrive.Terrain;
-using TerraDrive.Tools;
+using VectorRoad.Core;
+using VectorRoad.Terrain;
+using VectorRoad.Tools;
 using UnityEngine;
 
-namespace TerraDrive.Tests
+namespace VectorRoad.Tests
 {
     /// <summary>
     /// Unit tests for <see cref="LocationMenuController"/> and
@@ -301,11 +301,11 @@ namespace TerraDrive.Tests
         {
             // PlayerSpawnPosition must be Vector3.zero regardless of the origin used.
             var fakeMap = new MapData(
-                new System.Collections.Generic.List<TerraDrive.DataInversion.RoadSegment>(),
-                new System.Collections.Generic.List<TerraDrive.DataInversion.BuildingFootprint>(),
-                new System.Collections.Generic.List<TerraDrive.DataInversion.WaterBody>(),
-                TerraDrive.DataInversion.RegionType.Unknown,
-                new TerraDrive.Terrain.TerrainMeshResult(
+                new System.Collections.Generic.List<VectorRoad.DataInversion.RoadSegment>(),
+                new System.Collections.Generic.List<VectorRoad.DataInversion.BuildingFootprint>(),
+                new System.Collections.Generic.List<VectorRoad.DataInversion.WaterBody>(),
+                VectorRoad.DataInversion.RegionType.Unknown,
+                new VectorRoad.Terrain.TerrainMeshResult(
                     new Vector3[0], new int[0], new UnityEngine.Vector2[0]),
                 new ElevationGrid(0, 1, 0, 1, new double[2, 2]));
 

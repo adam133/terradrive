@@ -1,6 +1,6 @@
 #nullable enable
 
-namespace TerraDrive.DataInversion
+namespace VectorRoad.DataInversion
 {
     /// <summary>
     /// Classifies an OSM way by its road surface or functional category.

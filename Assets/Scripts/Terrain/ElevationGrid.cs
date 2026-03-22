@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TerraDrive.Terrain
+namespace VectorRoad.Terrain
 {
     /// <summary>
     /// A regular lat/lon grid of terrain elevation samples.

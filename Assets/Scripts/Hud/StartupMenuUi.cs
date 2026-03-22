@@ -7,11 +7,11 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using TerraDrive.Core;
-using TerraDrive.Terrain;
-using TerraDrive.Tools;
+using VectorRoad.Core;
+using VectorRoad.Terrain;
+using VectorRoad.Tools;
 
-namespace TerraDrive.Hud
+namespace VectorRoad.Hud
 {
     /// <summary>
     /// Programmatic uGUI startup menu shown when the game is in the
@@ -20,7 +20,7 @@ namespace TerraDrive.Hud
     /// before building the level.
     ///
     /// <para>
-    /// Auto-created by <see cref="TerraDrive.Core.MapSceneBuilder"/> when
+    /// Auto-created by <see cref="VectorRoad.Core.MapSceneBuilder"/> when
     /// <see cref="GameState.MainMenu"/> is detected at startup — no prefab or
     /// manual scene placement required.
     /// </para>
@@ -187,7 +187,7 @@ namespace TerraDrive.Hud
 
             try
             {
-                string dataDir = Path.Combine(Path.GetTempPath(), "terradrive");
+                string dataDir = Path.Combine(Path.GetTempPath(), "vectorroad");
                 Directory.CreateDirectory(dataDir);
 
                 string osmPath  = Path.Combine(dataDir, "current.osm");
@@ -310,7 +310,7 @@ namespace TerraDrive.Hud
             vl.childForceExpandWidth  = true;
             vl.childForceExpandHeight = false;
 
-            AddLabel(panel.transform, "TerraDrive", 54f, Color.white,
+            AddLabel(panel.transform, "VectorRoad", 54f, Color.white,
                      FontStyles.Bold, preferredHeight: 72f);
 
             AddLabel(panel.transform, "Choose how to start", 19f,

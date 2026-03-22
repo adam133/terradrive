@@ -6,9 +6,9 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using TerraDrive.Terrain;
+using VectorRoad.Terrain;
 
-namespace TerraDrive.Tools
+namespace VectorRoad.Tools
 {
     public class OsmDownloader : IOsmDownloader
     {

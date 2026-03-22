@@ -3,11 +3,11 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
-using TerraDrive.Core;
-using TerraDrive.DataInversion;
-using TerraDrive.Terrain;
+using VectorRoad.Core;
+using VectorRoad.DataInversion;
+using VectorRoad.Terrain;
 
-namespace TerraDrive.Tests
+namespace VectorRoad.Tests
 {
     /// <summary>
     /// Unit tests for <see cref="MapLoader"/>.

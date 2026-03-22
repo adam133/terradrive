@@ -1,6 +1,6 @@
 using System;
 
-namespace TerraDrive.DataInversion
+namespace VectorRoad.DataInversion
 {
     /// <summary>
     /// Represents a single OpenStreetMap node with geographic coordinates and elevation.

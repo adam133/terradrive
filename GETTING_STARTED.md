@@ -1,6 +1,6 @@
-# Getting Started with TerraDrive
+# Getting Started with VectorRoad
 
-This guide walks you through running TerraDrive as a proof of concept — from verifying the
+This guide walks you through running VectorRoad as a proof of concept — from verifying the
 core pipeline with the .NET test suite, through setting up a Unity scene, to producing a
 playable standalone executable.
 
@@ -21,7 +21,7 @@ The C# logic (OSM parsing, mesh generation, coordinate conversion, vehicle camer
 validated entirely outside Unity using the .NET test project.
 
 ```bash
-dotnet test Tests/TerraDrive.Tests/TerraDrive.Tests.csproj
+dotnet test Tests/VectorRoad.Tests/VectorRoad.Tests.csproj
 ```
 
 A successful run confirms:
@@ -37,10 +37,10 @@ A successful run confirms:
 > folder before running if you want to inspect the rendered output:
 >
 > ```bash
-> export CHASE_CAM_PREVIEW_DIR=/tmp/terradrive-previews
-> export MAP_PREVIEW_DIR=/tmp/terradrive-previews
-> mkdir -p /tmp/terradrive-previews
-> dotnet test Tests/TerraDrive.Tests/TerraDrive.Tests.csproj
+> export CHASE_CAM_PREVIEW_DIR=/tmp/vectorroad-previews
+> export MAP_PREVIEW_DIR=/tmp/vectorroad-previews
+> mkdir -p /tmp/vectorroad-previews
+> dotnet test Tests/VectorRoad.Tests/VectorRoad.Tests.csproj
 > ```
 
 ---
@@ -109,34 +109,34 @@ CI server or a headless machine), use Unity's batch-mode flags:
 :: Windows — create / import the project
 "C:\Program Files\Unity\Hub\Editor\6000.3.10f1\Editor\Unity.exe" ^
     -batchmode -quit ^
-    -createProject "C:\Users\Adam\Documents\GitHub\terradrive"
+    -createProject "C:\Users\Adam\Documents\GitHub\vectorroad"
 ```
 
 ```bash
 # macOS / Linux — create / import the project
 /Applications/Unity/Hub/Editor/6000.3.x/Unity.app/Contents/MacOS/Unity \
     -batchmode -quit \
-    -projectPath "/path/to/terradrive" \
-    -createProject "/path/to/terradrive"
+    -projectPath "/path/to/vectorroad" \
+    -createProject "/path/to/vectorroad"
 ```
 
-Once the project has been imported, apply the standard TerraDrive project settings
+Once the project has been imported, apply the standard VectorRoad project settings
 (gravity = -9.81, Road and Terrain layers) by executing the bundled setup script:
 
 ```bat
 :: Windows
 "C:\Program Files\Unity\Hub\Editor\6000.3.10f1\Editor\Unity.exe" ^
     -batchmode -quit ^
-    -projectPath "C:\Users\Adam\Documents\GitHub\terradrive" ^
-    -executeMethod TerraDrive.Editor.ProjectSetup.Configure
+    -projectPath "C:\Users\Adam\Documents\GitHub\vectorroad" ^
+    -executeMethod VectorRoad.Editor.ProjectSetup.Configure
 ```
 
 ```bash
 # macOS / Linux
 /Applications/Unity/Hub/Editor/6000.3.x/Unity.app/Contents/MacOS/Unity \
     -batchmode -quit \
-    -projectPath "/path/to/terradrive" \
-    -executeMethod TerraDrive.Editor.ProjectSetup.Configure
+    -projectPath "/path/to/vectorroad" \
+    -executeMethod VectorRoad.Editor.ProjectSetup.Configure
 ```
 
 The script configures the following defaults:
@@ -148,13 +148,13 @@ The script configures the following defaults:
 | User layer 9 | `Road` |
 
 You can also trigger the same setup interactively at any time from the Unity menu bar:
-**TerraDrive → Configure Project**.
+**VectorRoad → Configure Project**.
 
 ### 3b. Load an OSM map with the editor menu item
 
 The quickest way to try any location — no manual file downloads or Inspector edits needed:
 
-1. Click **TerraDrive → Load OSM File / Generate Level** in the Unity menu bar.
+1. Click **VectorRoad → Load OSM File / Generate Level** in the Unity menu bar.
    An editor window opens.
 2. Enter the **Latitude** and **Longitude** of your chosen map centre (decimal degrees,
    WGS-84).  For example, central London: `51.5074`, `-0.1278`.
@@ -162,7 +162,7 @@ The quickest way to try any location — no manual file downloads or Inspector e
 4. Optionally change the **Output Directory** where the downloaded files are saved
    (default: `Assets/Data/`).
 5. Click **Download & Generate Level**.  A progress bar shows download status while
-   TerraDrive fetches OSM road/building data from the Overpass API and the DEM elevation
+   VectorRoad fetches OSM road/building data from the Overpass API and the DEM elevation
    grid from the Open-Elevation API.
 6. After download the active scene's `MapSceneBuilder` and `GameManager` are configured
    automatically.  The scene is marked dirty — save it if you want to keep the settings.
@@ -261,9 +261,9 @@ Once the proof-of-concept scene works in Play mode you can export a standalone b
 
 Unity will compile the project and produce:
 
-- **Windows:** `TerraDrive.exe` + `TerraDrive_Data/` folder
-- **macOS:** `TerraDrive.app` bundle
-- **Linux:** `TerraDrive.x86_64` binary + `TerraDrive_Data/` folder
+- **Windows:** `VectorRoad.exe` + `VectorRoad_Data/` folder
+- **macOS:** `VectorRoad.app` bundle
+- **Linux:** `VectorRoad.x86_64` binary + `VectorRoad_Data/` folder
 
 Run the produced binary to play the game outside the editor.
 
@@ -304,7 +304,7 @@ Run the produced binary to play the game outside the editor.
 | Car physics + chase camera | ✅ Working |
 | Game state machine | ✅ Working |
 | CLI project create + configure (batch mode) | ✅ Working — `ProjectSetup.Configure` via `-executeMethod` |
-| Editor menu: Load OSM File / Generate Level | ✅ Working — **TerraDrive → Load OSM File / Generate Level** opens an editor window, accepts lat/lon/radius, downloads OSM + elevation data via `OsmDownloader`, wires `MapSceneBuilder` and `GameManager`, and optionally enters Play mode |
+| Editor menu: Load OSM File / Generate Level | ✅ Working — **VectorRoad → Load OSM File / Generate Level** opens an editor window, accepts lat/lon/radius, downloads OSM + elevation data via `OsmDownloader`, wires `MapSceneBuilder` and `GameManager`, and optionally enters Play mode |
 | Automated release builds (CI/CD) | ✅ Working — push to `release` branch triggers `release.yml` |
 | Texture ID → Material wiring | ✅ Working — `MaterialRegistry` scene component + placeholder auto-fill via `PlaceholderMaterialFactory` |
 | Runtime scene assembly | ✅ Working — `MapSceneBuilder` loads OSM + elevation data on Play, instantiates terrain / road / building / water GameObjects, and drives the `GameManager` state machine (`LoadingMap → GeneratingLevel → Racing`); pre-wired in `ProofOfConcept.unity` |

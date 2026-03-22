@@ -1,6 +1,6 @@
 # Tools
 
-Editor and command-line utilities for the TerraDrive pipeline.
+Editor and command-line utilities for the VectorRoad pipeline.
 
 ---
 

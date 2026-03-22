@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TerraDrive.Terrain
+namespace VectorRoad.Terrain
 {
     /// <summary>
     /// Abstraction over a DEM (Digital Elevation Model) data source.

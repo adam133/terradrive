@@ -4,10 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using UnityEngine;
-using TerraDrive.Core;
-using TerraDrive.Terrain;
+using VectorRoad.Core;
+using VectorRoad.Terrain;
 
-namespace TerraDrive.DataInversion
+namespace VectorRoad.DataInversion
 {
     /// <summary>
     /// Represents a single OSM road way with its projected world-space nodes.

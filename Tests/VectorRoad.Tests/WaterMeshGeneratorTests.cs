@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
-using TerraDrive.DataInversion;
-using TerraDrive.Procedural;
+using VectorRoad.DataInversion;
+using VectorRoad.Procedural;
 
-namespace TerraDrive.Tests
+namespace VectorRoad.Tests
 {
     /// <summary>
     /// Unit tests for <see cref="WaterMeshGenerator"/>.

@@ -1,4 +1,4 @@
-# TerraDrive
+# VectorRoad
 
 A semi-realistic racing game built on real-world roads using OpenStreetMap data and locally generated 3D assets.
 
@@ -6,7 +6,7 @@ A semi-realistic racing game built on real-world roads using OpenStreetMap data 
 
 ## Vision
 
-TerraDrive lets players race on procedurally generated tracks derived from actual GPS road data. Every road surface, building, and piece of roadside scenery is generated at runtime from real-world sources — so every location on Earth is a potential race track.
+VectorRoad lets players race on procedurally generated tracks derived from actual GPS road data. Every road surface, building, and piece of roadside scenery is generated at runtime from real-world sources — so every location on Earth is a potential race track.
 
 ---
 
@@ -25,7 +25,7 @@ TerraDrive lets players race on procedurally generated tracks derived from actua
 ## Project Structure
 
 ```
-/TerraDrive
+/VectorRoad
   /Assets
     /Scripts
       /Core          ← Game managers, state machines, coordinate helpers
@@ -125,7 +125,7 @@ See [`Assets/Scripts/Editor/ProjectSetup.cs`](Assets/Scripts/Editor/ProjectSetup
 
 ## Testing
 
-Unit tests live in [`Tests/TerraDrive.Tests/`](Tests/TerraDrive.Tests/) and use NUnit on .NET 8.
+Unit tests live in [`Tests/VectorRoad.Tests/`](Tests/VectorRoad.Tests/) and use NUnit on .NET 8.
 They cover the following modules:
 
 | Test file | Module(s) covered |
@@ -151,18 +151,18 @@ They cover the following modules:
 | `PlaceholderMaterialFactoryTests.cs` | `PlaceholderMaterialFactory` |
 | `SpeedometerTests.cs` | `Speedometer`, `SpeedometerHud` |
 | `MinimapRendererTests.cs` | `MinimapRenderer`, `MinimapLine` |
-| `OsmLevelLoaderTests.cs` | `OsmLevelLoader` (GPS coordinate settings & validation for the **TerraDrive → Load OSM File / Generate Level** editor menu item) |
+| `OsmLevelLoaderTests.cs` | `OsmLevelLoader` (GPS coordinate settings & validation for the **VectorRoad → Load OSM File / Generate Level** editor menu item) |
 | `LocationMenuControllerTests.cs` | `LocationMenuController`, `LocationLoadResult` |
 
 ```bash
-dotnet test Tests/TerraDrive.Tests/TerraDrive.Tests.csproj
+dotnet test Tests/VectorRoad.Tests/VectorRoad.Tests.csproj
 ```
 
 ---
 
 ## Getting Started
 
-For step-by-step instructions on running TerraDrive as a proof of concept — including
+For step-by-step instructions on running VectorRoad as a proof of concept — including
 verifying the pipeline with the .NET test suite, assembling the Unity scene, and producing
 a standalone executable — see **[GETTING_STARTED.md](GETTING_STARTED.md)**.
 
@@ -176,7 +176,7 @@ a standalone executable — see **[GETTING_STARTED.md](GETTING_STARTED.md)**.
 #### Verify the pipeline (no Unity needed)
 
 ```bash
-dotnet test Tests/TerraDrive.Tests/TerraDrive.Tests.csproj
+dotnet test Tests/VectorRoad.Tests/VectorRoad.Tests.csproj
 ```
 
 #### Download Map Data
@@ -201,7 +201,7 @@ dotnet run --project Tools/OsmDownloader -- --lat 51.5074 --lon -0.1278 --radius
 
 ## CLI — Create & Configure the Unity Project
 
-TerraDrive ships an Editor script ([`Assets/Scripts/Editor/ProjectSetup.cs`](Assets/Scripts/Editor/ProjectSetup.cs))
+VectorRoad ships an Editor script ([`Assets/Scripts/Editor/ProjectSetup.cs`](Assets/Scripts/Editor/ProjectSetup.cs))
 that can be run from the command line in Unity's **batch mode** to create the project and
 apply the standard project settings (gravity, layers) without opening the Unity Editor UI.
 
@@ -214,21 +214,21 @@ import the project. Pass `-createProject` to force it to generate all project me
 :: Windows — adjust the path to your installed Unity version
 "C:\Program Files\Unity\Hub\Editor\6000.3.x\Editor\Unity.exe" ^
     -batchmode -quit ^
-    -createProject "C:\path\to\terradrive"
+    -createProject "C:\path\to\vectorroad"
 ```
 
 ```bash
 # macOS / Linux
 /Applications/Unity/Hub/Editor/6000.3.x/Unity.app/Contents/MacOS/Unity \
     -batchmode -quit \
-    -projectPath "/path/to/terradrive" \
-    -createProject "/path/to/terradrive"
+    -projectPath "/path/to/vectorroad" \
+    -createProject "/path/to/vectorroad"
 ```
 
 ### Step 2 — Apply project defaults
 
 Once the project has been imported, run the `ProjectSetup.Configure` method to apply the
-standard TerraDrive settings:
+standard VectorRoad settings:
 
 | Setting | Value |
 |---|---|
@@ -240,20 +240,20 @@ standard TerraDrive settings:
 :: Windows
 "C:\Program Files\Unity\Hub\Editor\6000.3.x\Editor\Unity.exe" ^
     -batchmode -quit ^
-    -projectPath "C:\path\to\terradrive" ^
-    -executeMethod TerraDrive.Editor.ProjectSetup.Configure
+    -projectPath "C:\path\to\vectorroad" ^
+    -executeMethod VectorRoad.Editor.ProjectSetup.Configure
 ```
 
 ```bash
 # macOS / Linux
 /Applications/Unity/Hub/Editor/6000.3.x/Unity.app/Contents/MacOS/Unity \
     -batchmode -quit \
-    -projectPath "/path/to/terradrive" \
-    -executeMethod TerraDrive.Editor.ProjectSetup.Configure
+    -projectPath "/path/to/vectorroad" \
+    -executeMethod VectorRoad.Editor.ProjectSetup.Configure
 ```
 
 You can also run the same configuration interactively from the Unity menu bar:
-**TerraDrive → Configure Project**.
+**VectorRoad → Configure Project**.
 
 ### Load OSM File / Generate Level (interactive)
 
@@ -261,7 +261,7 @@ Once the project is open in the Unity Editor you can download a real-world map a
 generate the full level (terrain + roads + buildings) in a few clicks — no manual file
 management required:
 
-1. Click **TerraDrive → Load OSM File / Generate Level** in the Unity menu bar.
+1. Click **VectorRoad → Load OSM File / Generate Level** in the Unity menu bar.
    An editor window opens.
 2. Enter the **Latitude** and **Longitude** of the map origin (decimal degrees, WGS-84).
 3. Set the **Radius** (metres) that controls how large an area is downloaded
@@ -269,7 +269,7 @@ management required:
 4. Optionally change the **Output Directory** where the downloaded files are saved
    (default: `Assets/Data/`).
 5. Click **Download & Generate Level**.  A progress bar shows download status while
-   TerraDrive fetches OSM road/building data from the Overpass API and the DEM
+   VectorRoad fetches OSM road/building data from the Overpass API and the DEM
    elevation grid from the Open-Elevation API.
 6. After download, the active scene's `MapSceneBuilder` component (created automatically
    if absent) is wired to the downloaded files and the `GameManager` origin is synced.
@@ -315,7 +315,7 @@ The repository ships two GitHub Actions workflows.
    - Build the project for **Windows 64-bit**, **macOS**, and **Linux 64-bit** via
      [`game-ci/unity-builder`](https://game.ci/).
    - Upload each platform zip as a workflow artifact.
-   - Create a GitHub Release named `TerraDrive vX.Y.Z` with all three zips attached.
+   - Create a GitHub Release named `VectorRoad vX.Y.Z` with all three zips attached.
 
 ### Required secrets
 

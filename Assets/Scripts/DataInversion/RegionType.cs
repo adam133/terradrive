@@ -1,4 +1,4 @@
-namespace TerraDrive.DataInversion
+namespace VectorRoad.DataInversion
 {
     /// <summary>
     /// Classifies a map area by its broad climate zone or biome,

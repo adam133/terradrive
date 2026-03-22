@@ -8,10 +8,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
-using TerraDrive.Terrain;
-using TerraDrive.Tools;
+using VectorRoad.Terrain;
+using VectorRoad.Tools;
 
-namespace TerraDrive.Tests
+namespace VectorRoad.Tests
 {
     /// <summary>
     /// Unit tests for <see cref="OsmDownloader"/>.

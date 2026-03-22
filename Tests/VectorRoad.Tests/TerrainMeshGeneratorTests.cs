@@ -4,10 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
-using TerraDrive.Core;
-using TerraDrive.Terrain;
+using VectorRoad.Core;
+using VectorRoad.Terrain;
 
-namespace TerraDrive.Tests
+namespace VectorRoad.Tests
 {
     /// <summary>
     /// Unit tests for <see cref="ElevationGrid"/>, <see cref="TerrainMeshGenerator"/>,

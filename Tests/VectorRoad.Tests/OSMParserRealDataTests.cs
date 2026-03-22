@@ -1,9 +1,9 @@
 using System.IO;
 using NUnit.Framework;
-using TerraDrive.Core;
-using TerraDrive.DataInversion;
+using VectorRoad.Core;
+using VectorRoad.DataInversion;
 
-namespace TerraDrive.Tests
+namespace VectorRoad.Tests
 {
     /// <summary>
     /// Tests that parse the <c>Assets/StreamingAssets/Data/map.osm.xml</c> sample file to verify

@@ -2,10 +2,10 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using TerraDrive.Terrain;
-using TerraDrive.Tools;
+using VectorRoad.Terrain;
+using VectorRoad.Tools;
 
-namespace TerraDrive.Core
+namespace VectorRoad.Core
 {
     /// <summary>
     /// Encapsulates the game-menu logic for choosing a new real-world location by
@@ -86,10 +86,10 @@ namespace TerraDrive.Core
 
         /// <summary>
         /// Initialises a new instance using the default <see cref="OsmDownloader"/> and
-        /// a <c>terradrive</c> subdirectory inside the system temp folder.
+        /// a <c>vectorroad</c> subdirectory inside the system temp folder.
         /// </summary>
         public LocationMenuController()
-            : this(new OsmDownloader(), Path.Combine(Path.GetTempPath(), "terradrive")) { }
+            : this(new OsmDownloader(), Path.Combine(Path.GetTempPath(), "vectorroad")) { }
 
         /// <summary>
         /// Returns <c>true</c> when <paramref name="latitude"/> and

@@ -1,4 +1,4 @@
-namespace TerraDrive.Procedural
+namespace VectorRoad.Procedural
 {
     /// <summary>
     /// Classifies a roadside prop by its visual and functional category.

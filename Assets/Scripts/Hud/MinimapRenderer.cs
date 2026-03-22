@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using TerraDrive.DataInversion;
+using VectorRoad.DataInversion;
 
-namespace TerraDrive.Hud
+namespace VectorRoad.Hud
 {
     /// <summary>
     /// Renders a top-down minimap of nearby road segments relative to the player's

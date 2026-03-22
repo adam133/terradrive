@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TerraDrive.Terrain
+namespace VectorRoad.Terrain
 {
     /// <summary>
     /// Fetches terrain elevation data from the Open-Elevation REST API, which is backed

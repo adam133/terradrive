@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
-using TerraDrive.DataInversion;
-using TerraDrive.Procedural;
+using VectorRoad.DataInversion;
+using VectorRoad.Procedural;
 
-namespace TerraDrive.Tests
+namespace VectorRoad.Tests
 {
     [TestFixture]
     public class RoadSurfaceDeformerTests

@@ -61,13 +61,13 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Restore dependencies
-        run: dotnet restore Tests/TerraDrive.Tests/TerraDrive.Tests.csproj
+        run: dotnet restore Tests/VectorRoad.Tests/VectorRoad.Tests.csproj
 
       - name: Build
-        run: dotnet build Tests/TerraDrive.Tests/TerraDrive.Tests.csproj --no-restore
+        run: dotnet build Tests/VectorRoad.Tests/VectorRoad.Tests.csproj --no-restore
 
       - name: Run tests
-        run: dotnet test Tests/TerraDrive.Tests/TerraDrive.Tests.csproj --no-build --verbosity normal
+        run: dotnet test Tests/VectorRoad.Tests/VectorRoad.Tests.csproj --no-build --verbosity normal
 
   # ── 3. Build Unity project for each target platform ───────────────────────
   build:
@@ -106,7 +106,7 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
-          buildMethod: TerraDrive.Editor.ProjectSetup.Configure
+          buildMethod: VectorRoad.Editor.ProjectSetup.Configure
           allowDirtyBuild: true
 
       - name: Build project
@@ -117,20 +117,20 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: ${{ matrix.targetPlatform }}
-          buildName: TerraDrive
+          buildName: VectorRoad
           versioning: Custom
           version: ${{ needs.version.outputs.version }}
 
       - name: Archive build output
         run: |
           cd build/${{ matrix.targetPlatform }}
-          zip -r "../../TerraDrive-${{ needs.version.outputs.version }}-${{ matrix.targetPlatform }}.zip" .
+          zip -r "../../VectorRoad-${{ needs.version.outputs.version }}-${{ matrix.targetPlatform }}.zip" .
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TerraDrive-${{ needs.version.outputs.version }}-${{ matrix.targetPlatform }}
-          path: TerraDrive-${{ needs.version.outputs.version }}-${{ matrix.targetPlatform }}.zip
+          name: VectorRoad-${{ needs.version.outputs.version }}-${{ matrix.targetPlatform }}
+          path: VectorRoad-${{ needs.version.outputs.version }}-${{ matrix.targetPlatform }}.zip
           if-no-files-found: error
           retention-days: 90
 
@@ -155,7 +155,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.version.outputs.version }}
-          name: TerraDrive v${{ needs.version.outputs.version }}
+          name: VectorRoad v${{ needs.version.outputs.version }}
           draft: false
           prerelease: false
           generate_release_notes: true

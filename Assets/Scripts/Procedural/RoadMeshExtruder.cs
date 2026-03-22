@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
-using TerraDrive.DataInversion;
+using VectorRoad.DataInversion;
 
-namespace TerraDrive.Procedural
+namespace VectorRoad.Procedural
 {
     /// <summary>
     /// Extrudes a UV-mapped road mesh along a sequence of spline positions.

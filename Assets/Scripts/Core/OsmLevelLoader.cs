@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace TerraDrive.Core
+namespace VectorRoad.Core
 {
     /// <summary>
     /// Holds the GPS-coordinate settings for a
-    /// <b>TerraDrive → Load OSM File / Generate Level</b> operation and validates them
+    /// <b>VectorRoad → Load OSM File / Generate Level</b> operation and validates them
     /// before the Editor downloads data and wires it into a
     /// <see cref="MapSceneBuilder"/> component.
     ///
