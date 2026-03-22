@@ -6,7 +6,7 @@ using TerraDrive.DataInversion;
 namespace TerraDrive.Tests
 {
     /// <summary>
-    /// Tests that parse the <c>Assets/Data/map.osm.xml</c> sample file to verify
+    /// Tests that parse the <c>Assets/StreamingAssets/Data/map.osm.xml</c> sample file to verify
     /// the OSM parser handles real-world data correctly.
     /// </summary>
     [TestFixture]
@@ -19,7 +19,7 @@ namespace TerraDrive.Tests
         // ── helpers ────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Locates <c>Assets/Data/map.osm.xml</c> by walking up the directory tree
+        /// Locates <c>Assets/StreamingAssets/Data/map.osm.xml</c> by walking up the directory tree
         /// from the test assembly location.
         /// </summary>
         private static string FindOsmMapFile()
@@ -30,7 +30,7 @@ namespace TerraDrive.Tests
 
             for (int depth = 0; depth < 8; depth++)
             {
-                string candidate = Path.Combine(dir, "Assets", "Data", "map.osm.xml");
+                string candidate = Path.Combine(dir, "Assets", "StreamingAssets", "Data", "map.osm.xml");
                 if (File.Exists(candidate))
                     return candidate;
 
@@ -40,7 +40,7 @@ namespace TerraDrive.Tests
             }
 
             throw new FileNotFoundException(
-                "Could not locate Assets/Data/map.osm.xml in the repository tree.");
+                "Could not locate Assets/StreamingAssets/Data/map.osm.xml in the repository tree.");
         }
 
         // ── tests ──────────────────────────────────────────────────────────────

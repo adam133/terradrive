@@ -407,8 +407,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  OsmFilePath: Assets/Data/map.osm.xml
-  ElevationCsvPath: Assets/Data/map.elevation.csv
+  OsmFilePath: Data/map.osm.xml
+  ElevationCsvPath: Data/map.elevation.csv
   OriginLatitude: 41.895720000000004
   OriginLongitude: -93.588755
   Registry: {fileID: 3003}
