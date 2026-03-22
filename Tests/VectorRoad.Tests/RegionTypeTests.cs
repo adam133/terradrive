@@ -22,6 +22,12 @@ namespace VectorRoad.Tests
         }
 
         [Test]
+        public void RegionType_HasTemperateNorthAmericaValue()
+        {
+            Assert.That(Enum.IsDefined(typeof(RegionType), RegionType.TemperateNorthAmerica), Is.True);
+        }
+
+        [Test]
         public void RegionType_HasDesertValue()
         {
             Assert.That(Enum.IsDefined(typeof(RegionType), RegionType.Desert), Is.True);

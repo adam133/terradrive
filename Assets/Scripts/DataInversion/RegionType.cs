@@ -11,9 +11,16 @@ namespace VectorRoad.DataInversion
 
         /// <summary>
         /// Temperate broadleaf-forest climate (four seasons, moderate rainfall).
-        /// Typical of western and central Europe, most of the USA, and eastern Asia.
+        /// Typical of western and central Europe, and eastern Asia.
         /// </summary>
         Temperate,
+
+        /// <summary>
+        /// Temperate North American climate (four seasons, moderate rainfall).
+        /// Covers the USA and Canada, where roads are typically built to wider
+        /// standards than their European equivalents.
+        /// </summary>
+        TemperateNorthAmerica,
 
         /// <summary>
         /// Hot desert or arid climate (very low rainfall, extreme heat).

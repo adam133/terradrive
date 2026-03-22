@@ -78,6 +78,7 @@ namespace VectorRoad.Procedural
         /// <summary>
         /// Returns the road width in metres, derived from an explicit lane count when
         /// available, or from the road-type lookup as a fallback.
+        /// No shoulder width or region factor is applied.
         /// </summary>
         /// <param name="roadType">The functional road classification (used when <paramref name="lanes"/> is 0).</param>
         /// <param name="lanes">
@@ -88,6 +89,37 @@ namespace VectorRoad.Procedural
         /// <returns>Width in metres.</returns>
         public static float GetWidthForRoadType(RoadType roadType, int lanes) =>
             lanes > 0 ? lanes * DefaultLaneWidth : GetWidthForRoadType(roadType);
+
+        /// <summary>
+        /// Returns the road width in metres using the full regional formula:
+        /// <code>
+        ///   lanes &gt; 0 : (lanes × <see cref="DefaultLaneWidth"/> + shoulderWidth) × regionFactor
+        ///   lanes == 0 : baseTableWidth × regionFactor
+        /// </code>
+        /// Shoulder widths are taken from <see cref="RegionWidthFactors.GetShoulderWidth"/>;
+        /// the region multiplier is taken from <see cref="RegionWidthFactors.GetWidthFactor"/>.
+        /// </summary>
+        /// <param name="roadType">The functional road classification.</param>
+        /// <param name="lanes">
+        /// Number of lanes from the OSM <c>lanes</c> tag.  When greater than zero the
+        /// carriageway width (<c>lanes × <see cref="DefaultLaneWidth"/></c>) plus the
+        /// road-type shoulder width is used; otherwise the canonical table value is used.
+        /// </param>
+        /// <param name="region">
+        /// Geographic/climate region used to scale the computed width.
+        /// Defaults to <see cref="RegionType.Unknown"/> (factor 1.0 — no adjustment).
+        /// </param>
+        /// <returns>Width in metres.</returns>
+        public static float GetWidthForRoadType(RoadType roadType, int lanes, RegionType region)
+        {
+            float regionFactor = RegionWidthFactors.GetWidthFactor(region);
+            if (lanes > 0)
+            {
+                float shoulder = RegionWidthFactors.GetShoulderWidth(roadType);
+                return (lanes * DefaultLaneWidth + shoulder) * regionFactor;
+            }
+            return GetWidthForRoadType(roadType) * regionFactor;
+        }
 
         /// <summary>
         /// Generates a flat road mesh extruded along <paramref name="splinePoints"/>, using
@@ -221,8 +253,9 @@ namespace VectorRoad.Procedural
         /// </param>
         /// <param name="lanes">
         /// Number of lanes from the OSM <c>lanes</c> tag.  When greater than zero the
-        /// road width is computed as <c>lanes × <see cref="DefaultLaneWidth"/></c>;
-        /// otherwise the road-type width table is used.  Defaults to 0 (use table).
+        /// road width is computed as <c>(lanes × <see cref="DefaultLaneWidth"/> + shoulderWidth) × regionFactor</c>;
+        /// otherwise the road-type width table value scaled by the region factor is used.
+        /// Defaults to 0 (use table).
         /// </param>
         /// <param name="isOneWay">
         /// <c>true</c> when the OSM <c>oneway</c> tag indicates single-direction traffic.
@@ -245,7 +278,7 @@ namespace VectorRoad.Procedural
             bool isOneWay                = false) =>
             ExtrudeWithDetails(
                 splinePoints,
-                GetWidthForRoadType(roadType, lanes),
+                GetWidthForRoadType(roadType, lanes, region),
                 uvTileLength,
                 laneMarkingTileLength,
                 kerbWidth,

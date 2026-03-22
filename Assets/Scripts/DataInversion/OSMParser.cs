@@ -333,9 +333,13 @@ namespace VectorRoad.DataInversion
                 "GB" or "IE" or "DE" or "FR" or "NL" or "BE" or "LU" or
                 "AT" or "CH" or "PL" or "CZ" or "SK" or "HU" or "RO" or
                 "BG" or "SI" or "RS" or "BA" or "ME" or "MK" or "AL" or
-                "LT" or "LV" or "EE" or "US" or "CA" or "JP" or "KR" or
+                "LT" or "LV" or "EE" or "JP" or "KR" or
                 "NZ" or "CN" or "AR" or "CL"
                     => RegionType.Temperate,
+
+                // ── Temperate North America ────────────────────────────────────
+                "US" or "CA"
+                    => RegionType.TemperateNorthAmerica,
 
                 // ── Desert ─────────────────────────────────────────────────────
                 "SA" or "AE" or "QA" or "KW" or "OM" or "BH" or "YE" or

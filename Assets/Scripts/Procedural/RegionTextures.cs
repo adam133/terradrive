@@ -39,14 +39,15 @@ namespace VectorRoad.Procedural
 
             return region switch
             {
-                RegionType.Temperate    => "road_asphalt_temperate",
-                RegionType.Desert       => "road_asphalt_desert",
-                RegionType.Tropical     => "road_asphalt_tropical",
-                RegionType.Boreal       => "road_asphalt_boreal",
-                RegionType.Arctic       => "road_asphalt_arctic",
-                RegionType.Mediterranean => "road_asphalt_mediterranean",
-                RegionType.Steppe       => "road_asphalt_steppe",
-                _                       => "road_asphalt",
+                RegionType.Temperate            => "road_asphalt_temperate",
+                RegionType.TemperateNorthAmerica => "road_asphalt_temperate",
+                RegionType.Desert               => "road_asphalt_desert",
+                RegionType.Tropical             => "road_asphalt_tropical",
+                RegionType.Boreal               => "road_asphalt_boreal",
+                RegionType.Arctic               => "road_asphalt_arctic",
+                RegionType.Mediterranean        => "road_asphalt_mediterranean",
+                RegionType.Steppe               => "road_asphalt_steppe",
+                _                               => "road_asphalt",
             };
         }
 
@@ -62,14 +63,15 @@ namespace VectorRoad.Procedural
         {
             return region switch
             {
-                RegionType.Temperate    => "kerb_stone",
-                RegionType.Desert       => "kerb_concrete",
-                RegionType.Tropical     => "kerb_concrete",
-                RegionType.Boreal       => "kerb_stone",
-                RegionType.Arctic       => "kerb_concrete",
-                RegionType.Mediterranean => "kerb_granite",
-                RegionType.Steppe       => "kerb_concrete",
-                _                       => "kerb_stone",
+                RegionType.Temperate            => "kerb_stone",
+                RegionType.TemperateNorthAmerica => "kerb_concrete",
+                RegionType.Desert               => "kerb_concrete",
+                RegionType.Tropical             => "kerb_concrete",
+                RegionType.Boreal               => "kerb_stone",
+                RegionType.Arctic               => "kerb_concrete",
+                RegionType.Mediterranean        => "kerb_granite",
+                RegionType.Steppe               => "kerb_concrete",
+                _                               => "kerb_stone",
             };
         }
 
@@ -85,14 +87,15 @@ namespace VectorRoad.Procedural
         {
             return region switch
             {
-                RegionType.Temperate    => "building_wall_brick",
-                RegionType.Desert       => "building_wall_sandstone",
-                RegionType.Tropical     => "building_wall_stucco",
-                RegionType.Boreal       => "building_wall_timber",
-                RegionType.Arctic       => "building_wall_concrete",
-                RegionType.Mediterranean => "building_wall_stucco",
-                RegionType.Steppe       => "building_wall_concrete",
-                _                       => "building_wall_brick",
+                RegionType.Temperate            => "building_wall_brick",
+                RegionType.TemperateNorthAmerica => "building_wall_brick",
+                RegionType.Desert               => "building_wall_sandstone",
+                RegionType.Tropical             => "building_wall_stucco",
+                RegionType.Boreal               => "building_wall_timber",
+                RegionType.Arctic               => "building_wall_concrete",
+                RegionType.Mediterranean        => "building_wall_stucco",
+                RegionType.Steppe               => "building_wall_concrete",
+                _                               => "building_wall_brick",
             };
         }
 
@@ -108,14 +111,15 @@ namespace VectorRoad.Procedural
         {
             return region switch
             {
-                RegionType.Temperate    => "building_roof_slate",
-                RegionType.Desert       => "building_roof_terracotta",
-                RegionType.Tropical     => "building_roof_terracotta",
-                RegionType.Boreal       => "building_roof_metal",
-                RegionType.Arctic       => "building_roof_metal",
-                RegionType.Mediterranean => "building_roof_terracotta",
-                RegionType.Steppe       => "building_roof_flat",
-                _                       => "building_roof_slate",
+                RegionType.Temperate            => "building_roof_slate",
+                RegionType.TemperateNorthAmerica => "building_roof_slate",
+                RegionType.Desert               => "building_roof_terracotta",
+                RegionType.Tropical             => "building_roof_terracotta",
+                RegionType.Boreal               => "building_roof_metal",
+                RegionType.Arctic               => "building_roof_metal",
+                RegionType.Mediterranean        => "building_roof_terracotta",
+                RegionType.Steppe               => "building_roof_flat",
+                _                               => "building_roof_slate",
             };
         }
 
