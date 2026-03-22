@@ -513,13 +513,17 @@ namespace VectorRoad.Tests
         }
 
         [Test]
-        public void ExtrudeWithDetails_WithLanes_MeshWidthReflectsLaneCount()
+        public void ExtrudeWithDetails_WithLanes_MeshWidthReflectsLaneCountAndShoulder()
         {
+            // Formula: (lanes × DefaultLaneWidth + shoulderWidth) × regionFactor
+            // Primary shoulder = 3.0 m; Unknown region factor = 1.0
             const int lanes = 3;
-            float expectedWidth = lanes * RoadMeshExtruder.DefaultLaneWidth;
+            const RoadType roadType = RoadType.Primary;
+            float expectedWidth = lanes * RoadMeshExtruder.DefaultLaneWidth
+                                  + RegionWidthFactors.GetShoulderWidth(roadType);
 
             RoadMeshResult result = RoadMeshExtruder.ExtrudeWithDetails(
-                TwoPoints, RoadType.Primary, lanes: lanes);
+                TwoPoints, roadType, lanes: lanes);
 
             float actual = result.RoadMesh.Vertices[1].x - result.RoadMesh.Vertices[0].x;
             Assert.That(actual, Is.EqualTo(expectedWidth).Within(1e-4f));
@@ -583,6 +587,115 @@ namespace VectorRoad.Tests
                 Assert.That(result.LaneMarkingTextureId, Is.Not.Null.And.Not.Empty,
                     $"LaneMarkingTextureId must not be empty for road type '{rt}'.");
             }
+        }
+
+        // ── Region-based width factor ─────────────────────────────────────────
+
+        [Test]
+        public void GetWidthForRoadType_TemperateNorthAmerica_WiderThanTemperate()
+        {
+            // USA/Canada roads are wider than European roads of the same type.
+            float na     = RoadMeshExtruder.GetWidthForRoadType(RoadType.Primary, 0, RegionType.TemperateNorthAmerica);
+            float europe = RoadMeshExtruder.GetWidthForRoadType(RoadType.Primary, 0, RegionType.Temperate);
+
+            Assert.That(na, Is.GreaterThan(europe),
+                "North American roads should be wider than their European counterparts.");
+        }
+
+        [Test]
+        public void GetWidthForRoadType_WithRegion_ZeroLanes_AppliesRegionFactorToTableWidth()
+        {
+            // Zero lanes falls back to the table value, then multiplies by the region factor.
+            float baseWidth = RoadMeshExtruder.GetWidthForRoadType(RoadType.Secondary);
+            float naFactor  = RegionWidthFactors.GetWidthFactor(RegionType.TemperateNorthAmerica);
+            float expected  = baseWidth * naFactor;
+
+            float actual = RoadMeshExtruder.GetWidthForRoadType(
+                RoadType.Secondary, 0, RegionType.TemperateNorthAmerica);
+
+            Assert.That(actual, Is.EqualTo(expected).Within(1e-4f));
+        }
+
+        [Test]
+        public void GetWidthForRoadType_WithRegion_Lanes_AppliesShoulderAndRegionFactor()
+        {
+            const int lanes          = 2;
+            const RoadType roadType  = RoadType.Motorway;
+            const RegionType region  = RegionType.TemperateNorthAmerica;
+
+            float shoulder = RegionWidthFactors.GetShoulderWidth(roadType);
+            float factor   = RegionWidthFactors.GetWidthFactor(region);
+            float expected = (lanes * RoadMeshExtruder.DefaultLaneWidth + shoulder) * factor;
+
+            float actual = RoadMeshExtruder.GetWidthForRoadType(roadType, lanes, region);
+
+            Assert.That(actual, Is.EqualTo(expected).Within(1e-4f));
+        }
+
+        [Test]
+        public void GetWidthForRoadType_UnknownRegion_SameAsBaseline()
+        {
+            // RegionType.Unknown factor is 1.0 — identical to Temperate.
+            float unknown   = RoadMeshExtruder.GetWidthForRoadType(RoadType.Residential, 0, RegionType.Unknown);
+            float temperate = RoadMeshExtruder.GetWidthForRoadType(RoadType.Residential, 0, RegionType.Temperate);
+
+            Assert.That(unknown, Is.EqualTo(temperate).Within(1e-4f));
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_NorthAmerica_ProducesWiderMeshThanTemperate()
+        {
+            RoadMeshResult na     = RoadMeshExtruder.ExtrudeWithDetails(
+                TwoPoints, RoadType.Primary, region: RegionType.TemperateNorthAmerica);
+            RoadMeshResult europe = RoadMeshExtruder.ExtrudeWithDetails(
+                TwoPoints, RoadType.Primary, region: RegionType.Temperate);
+
+            float naWidth     = na.RoadMesh.Vertices[1].x     - na.RoadMesh.Vertices[0].x;
+            float europeWidth = europe.RoadMesh.Vertices[1].x - europe.RoadMesh.Vertices[0].x;
+
+            Assert.That(naWidth, Is.GreaterThan(europeWidth),
+                "North American road mesh must be wider than European mesh of the same type.");
+        }
+
+        [Test]
+        public void GetWidthFactor_AllRegions_ReturnPositiveValue()
+        {
+            foreach (RegionType region in System.Enum.GetValues(typeof(RegionType)))
+                Assert.That(RegionWidthFactors.GetWidthFactor(region), Is.GreaterThan(0f),
+                    $"Width factor for region '{region}' must be positive.");
+        }
+
+        [Test]
+        public void GetShoulderWidth_AllRoadTypes_ReturnNonNegativeValue()
+        {
+            foreach (RoadType rt in System.Enum.GetValues(typeof(RoadType)))
+                Assert.That(RegionWidthFactors.GetShoulderWidth(rt), Is.GreaterThanOrEqualTo(0f),
+                    $"Shoulder width for road type '{rt}' must be non-negative.");
+        }
+
+        [Test]
+        public void GetShoulderWidth_Motorway_WidestShoulder()
+        {
+            float motorway    = RegionWidthFactors.GetShoulderWidth(RoadType.Motorway);
+            float residential = RegionWidthFactors.GetShoulderWidth(RoadType.Residential);
+
+            Assert.That(motorway, Is.GreaterThan(residential),
+                "Motorway shoulders must be wider than residential shoulders.");
+        }
+
+        [Test]
+        public void ExtrudeWithDetails_WithLanes_NorthAmerica_WiderThanEurope()
+        {
+            RoadMeshResult na     = RoadMeshExtruder.ExtrudeWithDetails(
+                TwoPoints, RoadType.Primary, region: RegionType.TemperateNorthAmerica, lanes: 4);
+            RoadMeshResult europe = RoadMeshExtruder.ExtrudeWithDetails(
+                TwoPoints, RoadType.Primary, region: RegionType.Temperate, lanes: 4);
+
+            float naWidth     = na.RoadMesh.Vertices[1].x     - na.RoadMesh.Vertices[0].x;
+            float europeWidth = europe.RoadMesh.Vertices[1].x - europe.RoadMesh.Vertices[0].x;
+
+            Assert.That(naWidth, Is.GreaterThan(europeWidth),
+                "4-lane North American road must be wider than 4-lane European road.");
         }
     }
 }

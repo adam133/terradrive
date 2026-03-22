@@ -29,6 +29,7 @@
     <Compile Include="../../Assets/Scripts/Procedural/PropPlacement.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/PropType.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/RegionTextures.cs" />
+    <Compile Include="../../Assets/Scripts/Procedural/RegionWidthFactors.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/RoadMeshExtruder.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/RoadMeshResult.cs" />
     <Compile Include="../../Assets/Scripts/Procedural/RoadSurfaceDeformer.cs" />
