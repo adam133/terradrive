@@ -76,8 +76,8 @@ namespace TerraDrive.Editor
 
         private void OnEnable()
         {
-            // Default output directory: <project root>/Assets/Data/
-            _outputDir = Path.Combine(Application.dataPath, "Data");
+            // Default output directory: <project root>/Assets/StreamingAssets/Data/
+            _outputDir = Path.Combine(Application.dataPath, "StreamingAssets", "Data");
         }
 
         private void OnDisable()

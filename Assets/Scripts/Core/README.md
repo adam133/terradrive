@@ -54,8 +54,8 @@ scene.  Add it to any scene GameObject, configure the paths in the Inspector, an
 
 | Inspector field | Default | Notes |
 |---|---|---|
-| `OsmFilePath` | `Assets/Data/map.osm.xml` | Path to the `.osm` file (absolute or project-root-relative) |
-| `ElevationCsvPath` | `Assets/Data/map.elevation.csv` | Companion `.elevation.csv` file |
+| `OsmFilePath` | `Data/map.osm.xml` | Path to the `.osm` file (absolute or `streamingAssetsPath`-relative) |
+| `ElevationCsvPath` | `Data/map.elevation.csv` | Companion `.elevation.csv` file |
 | `OriginLatitude` | `0` | Map origin latitude; `0` inherits from `GameManager` |
 | `OriginLongitude` | `0` | Map origin longitude; `0` inherits from `GameManager` |
 | `Registry` | *(scene ref)* | `MaterialRegistry` used to apply materials to generated meshes |
@@ -74,7 +74,7 @@ building footprint (with `Walls` and `Roof` children), and per water body (a sin
 the heightfield mesh and a `MeshCollider`.
 
 The `ProofOfConcept.unity` scene ships with `MapSceneBuilder` pre-wired to the bundled
-`Assets/Data/map.osm.xml` + `Assets/Data/map.elevation.csv` sample data (Ames, Iowa).
+`Assets/StreamingAssets/Data/map.osm.xml` + `Assets/StreamingAssets/Data/map.elevation.csv` sample data (Ames, Iowa).
 
 ## LocationMenuController
 

@@ -27,14 +27,16 @@ namespace TerraDrive.Core
     ///
     /// <para>
     /// File paths can be absolute or relative.  Relative paths are resolved from
-    /// <c>Application.dataPath/..</c> (the project root in the Unity Editor;
-    /// the executable folder in a standalone build).
+    /// <c>Application.streamingAssetsPath</c>, which is the <c>Assets/StreamingAssets</c>
+    /// folder in the Unity Editor and the <c>&lt;GameName&gt;_Data/StreamingAssets</c>
+    /// folder in a standalone build.  This ensures the default map data is accessible
+    /// in both the editor and packaged releases.
     /// </para>
     ///
     /// Quick-start defaults (matching the bundled sample data):
     /// <list type="bullet">
-    ///   <item><see cref="OsmFilePath"/>: <c>Assets/Data/map.osm.xml</c></item>
-    ///   <item><see cref="ElevationCsvPath"/>: <c>Assets/Data/map.elevation.csv</c></item>
+    ///   <item><see cref="OsmFilePath"/>: <c>Data/map.osm.xml</c></item>
+    ///   <item><see cref="ElevationCsvPath"/>: <c>Data/map.elevation.csv</c></item>
     ///   <item>
     ///     Origin: taken from <see cref="GameManager.OriginLatitude"/> /
     ///     <see cref="GameManager.OriginLongitude"/> when both inspector fields are zero.
@@ -46,11 +48,11 @@ namespace TerraDrive.Core
         // ── Inspector ──────────────────────────────────────────────────────────
 
         [Header("Map Data")]
-        [Tooltip("Path to the .osm XML file.  Absolute, or relative to the project root.")]
-        public string OsmFilePath = "Assets/Data/map.osm.xml";
+        [Tooltip("Path to the .osm XML file.  Absolute, or relative to Application.streamingAssetsPath.")]
+        public string OsmFilePath = "Data/map.osm.xml";
 
-        [Tooltip("Path to the companion .elevation.csv file.  Absolute, or relative to the project root.")]
-        public string ElevationCsvPath = "Assets/Data/map.elevation.csv";
+        [Tooltip("Path to the companion .elevation.csv file.  Absolute, or relative to Application.streamingAssetsPath.")]
+        public string ElevationCsvPath = "Data/map.elevation.csv";
 
         [Header("Origin (leave both 0 to inherit from GameManager)")]
         [Tooltip("Latitude of the map origin (world 0,0,0).  0 = use GameManager.OriginLatitude.")]
@@ -909,15 +911,16 @@ namespace TerraDrive.Core
 
         /// <summary>
         /// Resolves a file path.  Absolute paths are returned unchanged.
-        /// Relative paths are combined with <c>Application.dataPath/..</c>
-        /// so they work from both the Unity Editor and standalone builds.
+        /// Relative paths are combined with <c>Application.streamingAssetsPath</c>
+        /// so the bundled default map data is found in both the Unity Editor and
+        /// standalone builds.
         /// </summary>
         private static string ResolvePath(string path)
         {
             if (string.IsNullOrEmpty(path) || Path.IsPathRooted(path))
                 return path;
 
-            return Path.GetFullPath(Path.Combine(Application.dataPath, "..", path));
+            return Path.GetFullPath(Path.Combine(Application.streamingAssetsPath, path));
         }
     }
 }

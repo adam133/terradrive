@@ -173,7 +173,7 @@ The scene contains:
 - **Directional Light** — a sun-like light angled at (50°, −30°, 0°).
 - **GameManager** — the singleton state machine, defaulting to `MainMenu` state and centred on Ames, Iowa (41.8957, −93.5888) — the geographic origin of the bundled sample data.
 - **MaterialRegistry** — pre-populated with 25 assignable texture-ID slots (road surfaces, kerbs, building walls, building roofs).  Each slot is empty by default; drag your Unity `Material` assets into the Inspector to wire them up (see §4a below).  Water, terrain, and lane-marking slots are filled automatically with solid-colour placeholders at startup.
-- **MapSceneBuilder** — wired to `Assets/Data/map.osm.xml` + `Assets/Data/map.elevation.csv`.  On Play it loads the map, builds the terrain/road/building/water geometry, and transitions the `GameManager` through `LoadingMap → GeneratingLevel → Racing` automatically.
+- **MapSceneBuilder** — wired to `Assets/StreamingAssets/Data/map.osm.xml` + `Assets/StreamingAssets/Data/map.elevation.csv`.  On Play it loads the map, builds the terrain/road/building/water geometry, and transitions the `GameManager` through `LoadingMap → GeneratingLevel → Racing` automatically.
 
 You still need to add a vehicle and camera manually (§4b–4e).  The terrain mesh is generated automatically by `MapSceneBuilder`, so you no longer need to create a flat ground plane.
 
