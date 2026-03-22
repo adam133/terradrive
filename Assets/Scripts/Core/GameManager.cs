@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace TerraDrive.Core
+namespace VectorRoad.Core
 {
     /// <summary>
     /// High-level game state values.
@@ -17,7 +17,7 @@ namespace TerraDrive.Core
     }
 
     /// <summary>
-    /// Singleton entry-point for TerraDrive.  Owns the top-level game state machine
+    /// Singleton entry-point for VectorRoad.  Owns the top-level game state machine
     /// and exposes events so other systems can react to state transitions without
     /// tight coupling.
     ///
@@ -67,7 +67,7 @@ namespace TerraDrive.Core
         /// When set, <see cref="MapSceneBuilder"/> uses this path instead of its
         /// inspector-configured <c>OsmFilePath</c> on the next scene load.
         ///
-        /// Populated by <see cref="TerraDrive.Hud.CoordinateEntryHud"/> after a
+        /// Populated by <see cref="VectorRoad.Hud.CoordinateEntryHud"/> after a
         /// successful in-game download so the reloaded scene picks up the new data.
         /// Clear back to an empty string to restore the inspector default.
         /// </summary>
@@ -78,7 +78,7 @@ namespace TerraDrive.Core
         /// When set, <see cref="MapSceneBuilder"/> uses this path instead of its
         /// inspector-configured <c>ElevationCsvPath</c> on the next scene load.
         ///
-        /// Populated by <see cref="TerraDrive.Hud.CoordinateEntryHud"/> after a
+        /// Populated by <see cref="VectorRoad.Hud.CoordinateEntryHud"/> after a
         /// successful in-game download so the reloaded scene picks up the new data.
         /// Clear back to an empty string to restore the inspector default.
         /// </summary>

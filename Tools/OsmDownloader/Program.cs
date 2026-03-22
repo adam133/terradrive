@@ -1,8 +1,8 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using TerraDrive.Terrain;
-using TerraDrive.Tools;
+using VectorRoad.Terrain;
+using VectorRoad.Tools;
 
 /// <summary>
 /// Entry point for the OsmDownloader command-line tool.

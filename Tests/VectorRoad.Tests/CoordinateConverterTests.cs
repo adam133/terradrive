@@ -1,9 +1,9 @@
 using System;
 using NUnit.Framework;
 using UnityEngine;
-using TerraDrive.Core;
+using VectorRoad.Core;
 
-namespace TerraDrive.Tests
+namespace VectorRoad.Tests
 {
     /// <summary>
     /// Unit tests for <see cref="CoordinateConverter"/>.

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace TerraDrive.Procedural
+namespace VectorRoad.Procedural
 {
     /// <summary>
     /// Applies smooth vertical elevation to a spline to represent a bridge or overpass.

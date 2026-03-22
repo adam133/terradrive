@@ -9,7 +9,7 @@ Game-wide managers, state machines, coordinate utilities, and the map-loading pi
 | `MapLoader.cs` | End-to-end async pipeline: loads `.osm` + `.elevation.csv`, parses with terrain elevation, returns a `MapData` object |
 | `MapData.cs` | Container holding roads, buildings, water bodies, region type, terrain mesh, and elevation grid |
 | `MapSceneBuilder.cs` | Unity MonoBehaviour that drives `MapLoader` at runtime and instantiates terrain, road, building, and water GameObjects in the scene |
-| `OsmLevelLoader.cs` | Pure C# GPS-coordinate settings/validator for the **TerraDrive → Load OSM File / Generate Level** editor menu item; holds `Latitude`, `Longitude`, `Radius` and exposes `Validate()` / `IsValid()` |
+| `OsmLevelLoader.cs` | Pure C# GPS-coordinate settings/validator for the **VectorRoad → Load OSM File / Generate Level** editor menu item; holds `Latitude`, `Longitude`, `Radius` and exposes `Validate()` / `IsValid()` |
 | `LocationMenuController.cs` | Downloads OSM + elevation data for a GPS coordinate and generates the full `MapData` via `MapLoader`; entry point for an in-game "change location" menu |
 | `LocationLoadResult.cs` | Result returned by `LocationMenuController.LoadLocationAsync`: contains `MapData`, `OriginLatitude`, `OriginLongitude`, and `PlayerSpawnPosition` (always world origin) |
 
@@ -54,8 +54,8 @@ scene.  Add it to any scene GameObject, configure the paths in the Inspector, an
 
 | Inspector field | Default | Notes |
 |---|---|---|
-| `OsmFilePath` | `Assets/Data/map.osm.xml` | Path to the `.osm` file (absolute or project-root-relative) |
-| `ElevationCsvPath` | `Assets/Data/map.elevation.csv` | Companion `.elevation.csv` file |
+| `OsmFilePath` | `Data/map.osm.xml` | Path to the `.osm` file (absolute or `streamingAssetsPath`-relative) |
+| `ElevationCsvPath` | `Data/map.elevation.csv` | Companion `.elevation.csv` file |
 | `OriginLatitude` | `0` | Map origin latitude; `0` inherits from `GameManager` |
 | `OriginLongitude` | `0` | Map origin longitude; `0` inherits from `GameManager` |
 | `Registry` | *(scene ref)* | `MaterialRegistry` used to apply materials to generated meshes |
@@ -74,7 +74,7 @@ building footprint (with `Walls` and `Roof` children), and per water body (a sin
 the heightfield mesh and a `MeshCollider`.
 
 The `ProofOfConcept.unity` scene ships with `MapSceneBuilder` pre-wired to the bundled
-`Assets/Data/map.osm.xml` + `Assets/Data/map.elevation.csv` sample data (Ames, Iowa).
+`Assets/StreamingAssets/Data/map.osm.xml` + `Assets/StreamingAssets/Data/map.elevation.csv` sample data (Ames, Iowa).
 
 ## LocationMenuController
 

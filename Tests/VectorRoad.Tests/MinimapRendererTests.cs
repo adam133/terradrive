@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
-using TerraDrive.DataInversion;
-using TerraDrive.Hud;
+using VectorRoad.DataInversion;
+using VectorRoad.Hud;
 
-namespace TerraDrive.Tests
+namespace VectorRoad.Tests
 {
     [TestFixture]
     public class MinimapRendererTests

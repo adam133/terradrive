@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace TerraDrive.Core
+namespace VectorRoad.Core
 {
     /// <summary>
     /// Converts WGS-84 GPS coordinates (latitude / longitude) to Unity world-space

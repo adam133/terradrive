@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace TerraDrive.Core
+namespace VectorRoad.Core
 {
     /// <summary>
     /// Result returned by <see cref="LocationMenuController.LoadLocationAsync"/>.

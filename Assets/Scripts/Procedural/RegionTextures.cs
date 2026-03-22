@@ -1,6 +1,6 @@
-using TerraDrive.DataInversion;
+using VectorRoad.DataInversion;
 
-namespace TerraDrive.Procedural
+namespace VectorRoad.Procedural
 {
     /// <summary>
     /// Provides region-appropriate texture identifiers for road and building meshes.

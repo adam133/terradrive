@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace TerraDrive.Procedural
+namespace VectorRoad.Procedural
 {
     /// <summary>
     /// Describes the world-space position, orientation, and type of a single roadside prop.

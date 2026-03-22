@@ -1,7 +1,7 @@
 using TMPro;
 using UnityEngine;
 
-namespace TerraDrive.Vehicle
+namespace VectorRoad.Vehicle
 {
     /// <summary>
     /// HUD component that reads the vehicle <see cref="Rigidbody"/> speed and drives a
@@ -15,7 +15,7 @@ namespace TerraDrive.Vehicle
 
         private Rigidbody _rb;
 
-        /// <summary>Assigns the speed label at runtime (called by <see cref="TerraDrive.Core.MapSceneBuilder"/>).</summary>
+        /// <summary>Assigns the speed label at runtime (called by <see cref="VectorRoad.Core.MapSceneBuilder"/>).</summary>
         public void Init(TMP_Text label) => _speedLabel = label;
 
         private void Awake()

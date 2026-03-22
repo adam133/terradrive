@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace TerraDrive.Vehicle
+namespace VectorRoad.Vehicle
 {
     /// <summary>
     /// Semi-realistic car controller using Unity's <see cref="WheelCollider"/> API.

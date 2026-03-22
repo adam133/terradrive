@@ -1,7 +1,7 @@
 using NUnit.Framework;
-using TerraDrive.Vehicle;
+using VectorRoad.Vehicle;
 
-namespace TerraDrive.Tests
+namespace VectorRoad.Tests
 {
     [TestFixture]
     public class SpeedometerTests

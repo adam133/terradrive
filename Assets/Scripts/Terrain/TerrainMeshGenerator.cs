@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
-using TerraDrive.Core;
+using VectorRoad.Core;
 
-namespace TerraDrive.Terrain
+namespace VectorRoad.Terrain
 {
     /// <summary>
     /// Generates a Unity-compatible heightfield mesh from an <see cref="ElevationGrid"/>.

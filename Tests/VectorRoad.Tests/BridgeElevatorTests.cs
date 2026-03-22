@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
-using TerraDrive.Procedural;
+using VectorRoad.Procedural;
 
-namespace TerraDrive.Tests
+namespace VectorRoad.Tests
 {
     [TestFixture]
     public class BridgeElevatorTests

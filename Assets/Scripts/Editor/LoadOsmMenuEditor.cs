@@ -5,13 +5,13 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using TerraDrive.Core;
-using TerraDrive.Tools;
+using VectorRoad.Core;
+using VectorRoad.Tools;
 
-namespace TerraDrive.Editor
+namespace VectorRoad.Editor
 {
     /// <summary>
-    /// Editor window opened by <b>TerraDrive → Load OSM File / Generate Level</b>.
+    /// Editor window opened by <b>VectorRoad → Load OSM File / Generate Level</b>.
     ///
     /// <para>
     /// The user enters GPS coordinates and a search radius, then clicks
@@ -64,7 +64,7 @@ namespace TerraDrive.Editor
 
         // ── Menu item ──────────────────────────────────────────────────────────
 
-        [MenuItem("TerraDrive/Load OSM File / Generate Level")]
+        [MenuItem("VectorRoad/Load OSM File / Generate Level")]
         public static void Open()
         {
             var window = GetWindow<LoadOsmMenuEditor>("Load OSM / Generate Level");
@@ -76,8 +76,8 @@ namespace TerraDrive.Editor
 
         private void OnEnable()
         {
-            // Default output directory: <project root>/Assets/Data/
-            _outputDir = Path.Combine(Application.dataPath, "Data");
+            // Default output directory: <project root>/Assets/StreamingAssets/Data/
+            _outputDir = Path.Combine(Application.dataPath, "StreamingAssets", "Data");
         }
 
         private void OnDisable()
@@ -189,7 +189,7 @@ namespace TerraDrive.Editor
 
                 // 1. Download OSM road/building XML.
                 EditorUtility.DisplayProgressBar(
-                    "TerraDrive — Downloading", "Fetching OSM road data…", 0.15f);
+                    "VectorRoad — Downloading", "Fetching OSM road data…", 0.15f);
 
                 var downloader = new OsmDownloader();
                 string osmXml = await downloader
@@ -201,9 +201,9 @@ namespace TerraDrive.Editor
 
                 // 2. Download DEM elevation grid.
                 EditorUtility.DisplayProgressBar(
-                    "TerraDrive — Downloading", "Fetching elevation data…", 0.55f);
+                    "VectorRoad — Downloading", "Fetching elevation data…", 0.55f);
 
-                TerraDrive.Terrain.ElevationGrid elevGrid = await downloader
+                VectorRoad.Terrain.ElevationGrid elevGrid = await downloader
                     .DownloadElevationGridAsync(latitude, longitude, radius,
                         cancellationToken: ct)
                     .ConfigureAwait(true);
@@ -213,7 +213,7 @@ namespace TerraDrive.Editor
 
                 // 3. Wire the downloaded files into the scene.
                 EditorUtility.DisplayProgressBar(
-                    "TerraDrive — Configuring", "Configuring scene…", 0.90f);
+                    "VectorRoad — Configuring", "Configuring scene…", 0.90f);
 
                 ConfigureScene(osmPath, csvPath, latitude, longitude);
 
@@ -222,7 +222,7 @@ namespace TerraDrive.Editor
 
                 // 4. Offer to enter Play mode.
                 bool enterPlay = EditorUtility.DisplayDialog(
-                    "TerraDrive — Generate Level",
+                    "VectorRoad — Generate Level",
                     $"Files downloaded and scene configured.\n\n" +
                     $"• Lat: {latitude:F6}  Lon: {longitude:F6}  Radius: {radius} m\n\n" +
                     "Enter Play mode now to build the terrain, roads, and buildings?",

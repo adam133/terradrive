@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace TerraDrive.Terrain
+namespace VectorRoad.Terrain
 {
     /// <summary>
     /// Holds the mesh data produced by <see cref="TerrainMeshGenerator.Generate"/>.

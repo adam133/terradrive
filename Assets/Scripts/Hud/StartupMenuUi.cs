@@ -7,11 +7,11 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using TerraDrive.Core;
-using TerraDrive.Terrain;
-using TerraDrive.Tools;
+using VectorRoad.Core;
+using VectorRoad.Terrain;
+using VectorRoad.Tools;
 
-namespace TerraDrive.Hud
+namespace VectorRoad.Hud
 {
     /// <summary>
     /// Programmatic uGUI startup menu shown when the game is in the
@@ -20,7 +20,7 @@ namespace TerraDrive.Hud
     /// before building the level.
     ///
     /// <para>
-    /// Auto-created by <see cref="TerraDrive.Core.MapSceneBuilder"/> when
+    /// Auto-created by <see cref="VectorRoad.Core.MapSceneBuilder"/> when
     /// <see cref="GameState.MainMenu"/> is detected at startup — no prefab or
     /// manual scene placement required.
     /// </para>
@@ -46,8 +46,7 @@ namespace TerraDrive.Hud
         private GameObject     _downloadPanel;
         private GameObject     _loadingPanel;
 
-        private TMP_InputField _latField;
-        private TMP_InputField _lonField;
+        private TMP_InputField _coordsField;
         private TMP_InputField _radField;
         private TMP_Text       _downloadStatus;
         private Button         _downloadBtn;
@@ -138,8 +137,7 @@ namespace TerraDrive.Hud
 
         private void OnShowDownload()
         {
-            _latField.text        = _defaultLatitude.ToString("F6", CultureInfo.InvariantCulture);
-            _lonField.text        = _defaultLongitude.ToString("F6", CultureInfo.InvariantCulture);
+            _coordsField.text     = $"{_defaultLatitude.ToString("F6", CultureInfo.InvariantCulture)}, {_defaultLongitude.ToString("F6", CultureInfo.InvariantCulture)}";
             _radField.text        = _defaultRadius.ToString(CultureInfo.InvariantCulture);
             _downloadStatus.text  = string.Empty;
             ShowDownload();
@@ -153,11 +151,15 @@ namespace TerraDrive.Hud
 
         private void OnDownloadAndLoad()
         {
-            if (!double.TryParse(_latField.text, NumberStyles.Float, CultureInfo.InvariantCulture, out double lat) ||
-                !double.TryParse(_lonField.text, NumberStyles.Float, CultureInfo.InvariantCulture, out double lon) ||
-                !int.TryParse(_radField.text,    NumberStyles.Integer, CultureInfo.InvariantCulture, out int rad))
+            if (!OsmLevelLoader.TryParseCoordinates(_coordsField.text, out double lat, out double lon))
             {
-                SetDownloadStatus("Invalid number format \u2014 use decimal notation, e.g. 51.5074", isError: true);
+                SetDownloadStatus("Invalid coordinates \u2014 enter as \u201clat, lon\u201d, e.g. 51.5074, -0.1278", isError: true);
+                return;
+            }
+
+            if (!int.TryParse(_radField.text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int rad))
+            {
+                SetDownloadStatus("Invalid radius \u2014 use a whole number, e.g. 500", isError: true);
                 return;
             }
 
@@ -185,7 +187,7 @@ namespace TerraDrive.Hud
 
             try
             {
-                string dataDir = Path.Combine(Path.GetTempPath(), "terradrive");
+                string dataDir = Path.Combine(Path.GetTempPath(), "vectorroad");
                 Directory.CreateDirectory(dataDir);
 
                 string osmPath  = Path.Combine(dataDir, "current.osm");
@@ -308,7 +310,7 @@ namespace TerraDrive.Hud
             vl.childForceExpandWidth  = true;
             vl.childForceExpandHeight = false;
 
-            AddLabel(panel.transform, "TerraDrive", 54f, Color.white,
+            AddLabel(panel.transform, "VectorRoad", 54f, Color.white,
                      FontStyles.Bold, preferredHeight: 72f);
 
             AddLabel(panel.transform, "Choose how to start", 19f,
@@ -329,7 +331,7 @@ namespace TerraDrive.Hud
 
         private GameObject BuildDownloadPanel(Transform canvasRoot)
         {
-            var panel = CreateCenteredPanel("DownloadPanel", canvasRoot, 500f, 390f);
+            var panel = CreateCenteredPanel("DownloadPanel", canvasRoot, 500f, 350f);
             AddPanelBackground(panel);
 
             var vl = panel.AddComponent<VerticalLayoutGroup>();
@@ -344,8 +346,8 @@ namespace TerraDrive.Hud
             AddLabel(panel.transform, "Download New Location", 28f, Color.white,
                      FontStyles.Bold, preferredHeight: 42f);
 
-            _latField = AddInputRow(panel.transform, "Latitude",   "e.g. 51.5074");
-            _lonField = AddInputRow(panel.transform, "Longitude",  "e.g. -0.1278");
+            _coordsField = AddInputRow(panel.transform, "Coordinates", "e.g. 51.5074, -0.1278");
+            _coordsField.contentType = TMP_InputField.ContentType.Standard;
             _radField = AddInputRow(panel.transform, "Radius (m)", "e.g. 500");
             _radField.contentType = TMP_InputField.ContentType.IntegerNumber;
 

@@ -1,5 +1,6 @@
 # ── Downloaded map data ───────────────────────────────────────────────────────
 Assets/Data/*.osm
+Assets/StreamingAssets/Data/downloaded.*
 
 # ── Unity build artifacts ─────────────────────────────────────────────────────
 [Ll]ibrary/

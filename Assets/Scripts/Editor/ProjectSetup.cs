@@ -2,11 +2,11 @@ using System;
 using UnityEditor;
 using UnityEngine;
 
-namespace TerraDrive.Editor
+namespace VectorRoad.Editor
 {
     /// <summary>
     /// One-shot project configurator that can be invoked from the Unity CLI in batch
-    /// mode via <c>-executeMethod TerraDrive.Editor.ProjectSetup.Configure</c>.
+    /// mode via <c>-executeMethod VectorRoad.Editor.ProjectSetup.Configure</c>.
     ///
     /// What it does:
     ///   • Sets physics gravity to (0, -9.81, 0).
@@ -18,14 +18,14 @@ namespace TerraDrive.Editor
     ///   Windows:
     ///     "C:\Program Files\Unity\Hub\Editor\6000.3.x\Editor\Unity.exe" ^
     ///       -batchmode -quit ^
-    ///       -executeMethod TerraDrive.Editor.ProjectSetup.Configure ^
-    ///       -projectPath "C:\path\to\terradrive"
+    ///       -executeMethod VectorRoad.Editor.ProjectSetup.Configure ^
+    ///       -projectPath "C:\path\to\vectorroad"
     ///
     ///   macOS / Linux:
     ///     /Applications/Unity/Hub/Editor/6000.3.x/Unity.app/Contents/MacOS/Unity \
     ///       -batchmode -quit \
-    ///       -executeMethod TerraDrive.Editor.ProjectSetup.Configure \
-    ///       -projectPath "/path/to/terradrive"
+    ///       -executeMethod VectorRoad.Editor.ProjectSetup.Configure \
+    ///       -projectPath "/path/to/vectorroad"
     /// </summary>
     public static class ProjectSetup
     {
@@ -36,7 +36,7 @@ namespace TerraDrive.Editor
 
         // ── Menu item (only visible in the Editor, not in batch mode) ──────────
 
-        [MenuItem("TerraDrive/Configure Project")]
+        [MenuItem("VectorRoad/Configure Project")]
         public static void Configure()
         {
             try

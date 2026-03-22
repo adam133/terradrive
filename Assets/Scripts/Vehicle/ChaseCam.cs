@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace TerraDrive.Vehicle
+namespace VectorRoad.Vehicle
 {
     /// <summary>
     /// Smooth chase-camera controller that follows a target vehicle from behind and

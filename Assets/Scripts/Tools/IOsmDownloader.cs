@@ -1,8 +1,8 @@
 using System.Threading;
 using System.Threading.Tasks;
-using TerraDrive.Terrain;
+using VectorRoad.Terrain;
 
-namespace TerraDrive.Tools
+namespace VectorRoad.Tools
 {
     public interface IOsmDownloader
     {

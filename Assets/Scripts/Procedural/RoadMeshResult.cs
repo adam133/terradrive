@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace TerraDrive.Procedural
+namespace VectorRoad.Procedural
 {
     /// <summary>
     /// Holds the set of meshes and region-appropriate texture identifiers produced by

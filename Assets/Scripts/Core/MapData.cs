@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using TerraDrive.DataInversion;
-using TerraDrive.Terrain;
+using VectorRoad.DataInversion;
+using VectorRoad.Terrain;
 
-namespace TerraDrive.Core
+namespace VectorRoad.Core
 {
     /// <summary>
     /// Holds all data produced by <see cref="MapLoader.LoadMapAsync"/>: the parsed OSM

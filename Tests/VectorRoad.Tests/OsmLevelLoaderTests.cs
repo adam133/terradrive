@@ -1,12 +1,12 @@
 using NUnit.Framework;
-using TerraDrive.Core;
+using VectorRoad.Core;
 
-namespace TerraDrive.Tests
+namespace VectorRoad.Tests
 {
     /// <summary>
     /// Unit tests for <see cref="OsmLevelLoader"/> — the pure-C# helper that validates
     /// GPS-coordinate settings for the
-    /// <b>TerraDrive → Load OSM File / Generate Level</b> editor menu item.
+    /// <b>VectorRoad → Load OSM File / Generate Level</b> editor menu item.
     /// </summary>
     [TestFixture]
     public class OsmLevelLoaderTests
@@ -231,6 +231,116 @@ namespace TerraDrive.Tests
         {
             var loader = new OsmLevelLoader { Radius = 1234 };
             Assert.That(loader.Radius, Is.EqualTo(1234));
+        }
+
+        // ── TryParseCoordinates ───────────────────────────────────────────────
+
+        [Test]
+        public void TryParseCoordinates_ValidInput_ReturnsTrueAndCorrectValues()
+        {
+            bool result = OsmLevelLoader.TryParseCoordinates("51.5074, -0.1278", out double lat, out double lon);
+
+            Assert.That(result, Is.True);
+            Assert.That(lat, Is.EqualTo(51.5074).Within(1e-9));
+            Assert.That(lon, Is.EqualTo(-0.1278).Within(1e-9));
+        }
+
+        [Test]
+        public void TryParseCoordinates_NoSpaces_ReturnsTrueAndCorrectValues()
+        {
+            bool result = OsmLevelLoader.TryParseCoordinates("48.8566,2.3522", out double lat, out double lon);
+
+            Assert.That(result, Is.True);
+            Assert.That(lat, Is.EqualTo(48.8566).Within(1e-9));
+            Assert.That(lon, Is.EqualTo(2.3522).Within(1e-9));
+        }
+
+        [Test]
+        public void TryParseCoordinates_NegativeLatAndLon_ReturnsTrueAndCorrectValues()
+        {
+            bool result = OsmLevelLoader.TryParseCoordinates("-33.8688, -70.6693", out double lat, out double lon);
+
+            Assert.That(result, Is.True);
+            Assert.That(lat, Is.EqualTo(-33.8688).Within(1e-9));
+            Assert.That(lon, Is.EqualTo(-70.6693).Within(1e-9));
+        }
+
+        [Test]
+        public void TryParseCoordinates_ExtraWhitespace_ReturnsTrueAndCorrectValues()
+        {
+            bool result = OsmLevelLoader.TryParseCoordinates("  51.5074  ,  -0.1278  ", out double lat, out double lon);
+
+            Assert.That(result, Is.True);
+            Assert.That(lat, Is.EqualTo(51.5074).Within(1e-9));
+            Assert.That(lon, Is.EqualTo(-0.1278).Within(1e-9));
+        }
+
+        [Test]
+        public void TryParseCoordinates_NullInput_ReturnsFalse()
+        {
+            bool result = OsmLevelLoader.TryParseCoordinates(null, out double lat, out double lon);
+
+            Assert.That(result, Is.False);
+            Assert.That(lat, Is.EqualTo(0.0));
+            Assert.That(lon, Is.EqualTo(0.0));
+        }
+
+        [Test]
+        public void TryParseCoordinates_EmptyInput_ReturnsFalse()
+        {
+            bool result = OsmLevelLoader.TryParseCoordinates(string.Empty, out double lat, out double lon);
+
+            Assert.That(result, Is.False);
+        }
+
+        [Test]
+        public void TryParseCoordinates_NoComma_ReturnsFalse()
+        {
+            bool result = OsmLevelLoader.TryParseCoordinates("51.5074 -0.1278", out double lat, out double lon);
+
+            Assert.That(result, Is.False);
+        }
+
+        [Test]
+        public void TryParseCoordinates_SingleNumberOnly_ReturnsFalse()
+        {
+            bool result = OsmLevelLoader.TryParseCoordinates("51.5074", out double lat, out double lon);
+
+            Assert.That(result, Is.False);
+        }
+
+        [Test]
+        public void TryParseCoordinates_NonNumericParts_ReturnsFalse()
+        {
+            bool result = OsmLevelLoader.TryParseCoordinates("abc, def", out double lat, out double lon);
+
+            Assert.That(result, Is.False);
+        }
+
+        [Test]
+        public void TryParseCoordinates_OnlyComma_ReturnsFalse()
+        {
+            bool result = OsmLevelLoader.TryParseCoordinates(",", out double lat, out double lon);
+
+            Assert.That(result, Is.False);
+        }
+
+        [Test]
+        public void TryParseCoordinates_WhiteSpaceOnly_ReturnsFalse()
+        {
+            bool result = OsmLevelLoader.TryParseCoordinates("   ", out double lat, out double lon);
+
+            Assert.That(result, Is.False);
+        }
+
+        [Test]
+        public void TryParseCoordinates_IntegerCoordinates_ReturnsTrueAndCorrectValues()
+        {
+            bool result = OsmLevelLoader.TryParseCoordinates("51, 0", out double lat, out double lon);
+
+            Assert.That(result, Is.True);
+            Assert.That(lat, Is.EqualTo(51.0).Within(1e-9));
+            Assert.That(lon, Is.EqualTo(0.0).Within(1e-9));
         }
     }
 }

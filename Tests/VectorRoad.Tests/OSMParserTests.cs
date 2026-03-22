@@ -5,10 +5,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
-using TerraDrive.DataInversion;
-using TerraDrive.Terrain;
+using VectorRoad.DataInversion;
+using VectorRoad.Terrain;
 
-namespace TerraDrive.Tests
+namespace VectorRoad.Tests
 {
     /// <summary>
     /// Unit tests for <see cref="OSMParser"/>.

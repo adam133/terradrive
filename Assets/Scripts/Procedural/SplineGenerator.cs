@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace TerraDrive.Procedural
+namespace VectorRoad.Procedural
 {
     /// <summary>
     /// Generates a smooth Catmull-Rom spline through a sequence of world-space control points.

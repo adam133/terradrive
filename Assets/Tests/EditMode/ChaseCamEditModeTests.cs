@@ -1,8 +1,8 @@
 using NUnit.Framework;
 using UnityEngine;
-using TerraDrive.Vehicle;
+using VectorRoad.Vehicle;
 
-namespace TerraDrive.Tests.EditMode
+namespace VectorRoad.Tests.EditMode
 {
     /// <summary>
     /// Edit-mode tests for <see cref="ChaseCam"/>.

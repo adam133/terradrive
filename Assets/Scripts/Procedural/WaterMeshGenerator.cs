@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
-using TerraDrive.DataInversion;
+using VectorRoad.DataInversion;
 
-namespace TerraDrive.Procedural
+namespace VectorRoad.Procedural
 {
     /// <summary>
     /// Generates flat water-surface meshes from <see cref="WaterBody"/> polygon outlines

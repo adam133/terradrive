@@ -2,9 +2,9 @@ using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
-using TerraDrive.Vehicle;
+using VectorRoad.Vehicle;
 
-namespace TerraDrive.Tests.PlayMode
+namespace VectorRoad.Tests.PlayMode
 {
     /// <summary>
     /// Play-mode tests for <see cref="CarController"/> MonoBehaviour lifecycle.

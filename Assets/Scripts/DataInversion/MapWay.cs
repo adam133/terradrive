@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace TerraDrive.DataInversion
+namespace VectorRoad.DataInversion
 {
     /// <summary>
     /// Represents a single OpenStreetMap way, holding raw geographic nodes and all OSM metadata.
