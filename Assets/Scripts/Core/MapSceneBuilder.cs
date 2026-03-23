@@ -304,7 +304,7 @@ namespace VectorRoad.Core
                 SpawnPropCollider(prop, parent.transform);
         }
 
-        private static void SpawnPropCollider(PropPlacement prop, Transform parent)
+        private void SpawnPropCollider(PropPlacement prop, Transform parent)
         {
             var go = new GameObject($"Prop_{prop.Type}");
             go.transform.SetParent(parent, false);
@@ -320,6 +320,9 @@ namespace VectorRoad.Core
                     col.radius = 0.1f;
                     col.height = 4f;
                     col.center = new Vector3(0f, 2f, 0f);
+
+                    string textureId = prop.Type == PropType.LampPost ? "prop_lamppost" : "prop_signpost";
+                    AddCapsuleVisual(go, scale: new Vector3(0.2f, 2f, 0.2f), centerY: 2f, textureId: textureId);
                     break;
                 }
 
@@ -329,6 +332,8 @@ namespace VectorRoad.Core
                     col.radius = 0.3f;
                     col.height = 4f;
                     col.center = new Vector3(0f, 2f, 0f);
+
+                    AddCapsuleVisual(go, scale: new Vector3(0.6f, 2f, 0.6f), centerY: 2f, textureId: "prop_tree");
                     break;
                 }
 
@@ -337,9 +342,33 @@ namespace VectorRoad.Core
                     var col    = go.AddComponent<BoxCollider>();
                     col.size   = new Vector3(2f, 1.5f, 0.1f);
                     col.center = new Vector3(0f, 0.75f, 0f);
+
+                    AddBoxVisual(go, scale: new Vector3(2f, 1.5f, 0.1f), centerY: 0.75f, textureId: "prop_fence");
                     break;
                 }
             }
+        }
+
+        private void AddCapsuleVisual(GameObject parent, Vector3 scale, float centerY, string textureId)
+        {
+            var visual = new GameObject("Mesh");
+            visual.transform.SetParent(parent.transform, false);
+            visual.transform.localPosition = new Vector3(0f, centerY, 0f);
+            visual.transform.localScale    = scale;
+            visual.AddComponent<MeshFilter>().sharedMesh = Resources.GetBuiltinResource<Mesh>("Capsule.fbx");
+            var mr = visual.AddComponent<MeshRenderer>();
+            Registry?.ApplyTo(mr, textureId);
+        }
+
+        private void AddBoxVisual(GameObject parent, Vector3 scale, float centerY, string textureId)
+        {
+            var visual = new GameObject("Mesh");
+            visual.transform.SetParent(parent.transform, false);
+            visual.transform.localPosition = new Vector3(0f, centerY, 0f);
+            visual.transform.localScale    = scale;
+            visual.AddComponent<MeshFilter>().sharedMesh = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
+            var mr = visual.AddComponent<MeshRenderer>();
+            Registry?.ApplyTo(mr, textureId);
         }
 
         private static Vector3[] ClampRoadSplineToTerrain(

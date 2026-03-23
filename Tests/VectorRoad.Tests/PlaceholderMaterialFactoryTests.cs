@@ -43,6 +43,10 @@ namespace VectorRoad.Tests
         [TestCase("water_tropical")]
         [TestCase("lane_marking_oneway")]
         [TestCase("lane_marking_twoway")]
+        [TestCase("prop_lamppost")]
+        [TestCase("prop_signpost")]
+        [TestCase("prop_tree")]
+        [TestCase("prop_fence")]
         public void Create_AllKnownIds_ReturnMaterialWithDistinctColor(string textureId)
         {
             // Magenta (r=1, g=0, b=1) is Unity's "missing material" colour.
@@ -108,6 +112,36 @@ namespace VectorRoad.Tests
             Assert.That(mat.color.b, Is.EqualTo(0.5f).Within(0.001f));
         }
 
+        [Test]
+        public void Create_PropPostIds_HaveMidGreyColor()
+        {
+            foreach (var id in new[] { "prop_lamppost", "prop_signpost" })
+            {
+                var mat = PlaceholderMaterialFactory.Create(id);
+                Assert.That(mat.color.r, Is.EqualTo(0.60f).Within(0.001f), $"{id}: red channel");
+                Assert.That(mat.color.g, Is.EqualTo(0.60f).Within(0.001f), $"{id}: green channel");
+                Assert.That(mat.color.b, Is.EqualTo(0.60f).Within(0.001f), $"{id}: blue channel");
+            }
+        }
+
+        [Test]
+        public void Create_PropTree_HasGreenDominance()
+        {
+            var mat = PlaceholderMaterialFactory.Create("prop_tree");
+            Assert.That(mat.color.g, Is.GreaterThan(mat.color.r), "prop_tree: green > red");
+            Assert.That(mat.color.g, Is.GreaterThan(mat.color.b), "prop_tree: green > blue");
+        }
+
+        [Test]
+        public void Create_PropFence_HasWarmBrownTone()
+        {
+            var mat = PlaceholderMaterialFactory.Create("prop_fence");
+            // Weathered wood: red > blue, both > 0.4
+            Assert.That(mat.color.r, Is.GreaterThan(mat.color.b), "prop_fence: red > blue");
+            Assert.That(mat.color.r, Is.GreaterThan(0.4f), "prop_fence: visible red component");
+            Assert.That(mat.color.b, Is.GreaterThan(0.4f), "prop_fence: visible blue component");
+        }
+
         // ── FillMissing ───────────────────────────────────────────────────────
 
         [Test]
@@ -132,6 +166,7 @@ namespace VectorRoad.Tests
                 "terrain_grass",
                 "water", "water_arctic", "water_tropical",
                 "lane_marking_oneway", "lane_marking_twoway",
+                "prop_lamppost", "prop_signpost", "prop_tree", "prop_fence",
             })
             {
                 Assert.That(registry.GetMaterial(id), Is.Not.Null,

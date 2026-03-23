@@ -70,6 +70,12 @@ namespace VectorRoad.Procedural
             // Lane markings
             "lane_marking_oneway",
             "lane_marking_twoway",
+
+            // Roadside props
+            "prop_lamppost",
+            "prop_signpost",
+            "prop_tree",
+            "prop_fence",
         };
 
         // ── Public API ─────────────────────────────────────────────────────────
@@ -156,6 +162,15 @@ namespace VectorRoad.Procedural
 
             if (id.StartsWith("lane_marking"))
                 return Color.white;
+
+            if (id == "prop_lamppost" || id == "prop_signpost")
+                return new Color(0.60f, 0.60f, 0.60f);   // mid grey metal post
+
+            if (id == "prop_tree")
+                return new Color(0.30f, 0.50f, 0.20f);   // muted olive green
+
+            if (id == "prop_fence")
+                return new Color(0.65f, 0.55f, 0.45f);   // weathered wood
 
             return new Color(0.50f, 0.50f, 0.50f);        // neutral fallback
         }
