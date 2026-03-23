@@ -1,0 +1,82 @@
+name: PR Preview Screenshot
+
+# Loads the default location in Unity play mode, renders a screenshot, and
+# posts a direct download link as a comment on the pull request.
+#
+# Required repository secrets
+# ────────────────────────────
+#   UNITY_LICENSE   – contents of a valid Unity .ulf license file
+#   UNITY_EMAIL     – Unity account e-mail
+#   UNITY_PASSWORD  – Unity account password
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  screenshot:
+    name: Capture play-mode screenshot
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-screenshot-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-screenshot-
+            Library-
+
+      - name: Run play-mode screenshot test
+        uses: game-ci/unity-test-runner@v4
+        id: screenshot-test
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          testMode: playMode
+          testFilter: VectorRoad.Tests.PlayMode.SceneScreenshotTests
+          artifactsPath: TestResults/playMode
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: PR Preview Screenshot
+
+      - name: Upload screenshot artifact
+        id: upload-screenshot
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr-preview-screenshot
+          path: Screenshots/pr-preview.png
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Post PR comment with download link
+        uses: actions/github-script@v7
+        if: always()
+        env:
+          ARTIFACT_URL: ${{ steps.upload-screenshot.outputs.artifact-url }}
+        with:
+          script: |
+            const artifactUrl = process.env.ARTIFACT_URL;
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const body = artifactUrl
+              ? `## 📸 PR Preview Screenshot\n\nA screenshot of the default location in play mode was captured for this PR.\n\n**[⬇️ Download Screenshot](${artifactUrl})**\n\n> Rendered at [workflow run](${runUrl})`
+              : `## 📸 PR Preview Screenshot\n\n⚠️ The screenshot could not be captured for this PR.\n\nSee the [workflow run](${runUrl}) for details.`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
