@@ -66,6 +66,12 @@ namespace VectorRoad.Tests.PlayMode
                 yield return null;
             }
 
+            // Give the physics engine and ChaseCam a few seconds to settle.
+            // The vehicle is spawned 2 m above the road surface and needs time to
+            // drop onto it; the ChaseCam uses SmoothDamp so it also needs several
+            // frames to move from its initial position to behind the vehicle.
+            yield return new WaitForSeconds(3f);
+
             // Find any active camera to render from.  Camera.main returns the
             // camera tagged "MainCamera", which is the expected render camera in
             // the ProofOfConcept scene.  FindFirstObjectByType is a safe fallback
